@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="id">
+	<head>
+
+    
+   
+	
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Aplikasi Cetak Foto Pro</title>
+		
+		 <link rel="manifest" href="manifest.json">
+        <meta name="theme-color" content="#007bff">
+		
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+		
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+		
+		<style>
+			* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+			body { background: #FDF4FF; overflow-x: hidden; }
+			header { flex-shrink: 0; background: #E9D5FF; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,.08); z-index: 10; position: relative; }
+			
+			/* Dashboard Menu */
+			.menu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 15px; max-width: 800px; margin: 0 auto; }
+			.menu button { border: none; background: white; border-radius: 12px; padding: 18px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); transition: .2s; }
+			.menu button:hover { transform: translateY(-3px); }
+			.icon { font-size: 30px; }
+			
+			/* Halaman Pas Foto, Grid, Custom, & Hitung Gambar */
+			.page { display: none; margin: 5px; background: white; border-radius: 12px; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+			.page.active { display: block; }
+			.page-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 2px solid #f4f6f9; padding-bottom: 5px; }
+			.back-link { font-size: 24px; cursor: pointer; transition: .2s; }
+			
+			/* Layout Form */
+			.main-content { display: flex; flex-direction: column; gap: 20px; width: 100%; }
+			.sidebar-form { width: 100%; background: #FDF4FF; padding: 15px; border-radius: 8px; }
+			
+			.form-group { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+			.form-group label { font-weight: bold; font-size: 13px; color: #555; flex: 1; min-width: 130px; }
+			.form-group input[type="number"], .form-group select, .form-group .btn-action { padding: 6px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; flex: 1.5; width: 100%; }
+			.btn-action { background: #0d6efd; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+			
+			.button-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd; }
+			.btn-control { padding: 7px; border: none; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; transition: background 0.2s; text-align: center; }
+			.btn-add { background: #198754; color: white; }
+			.btn-add:hover { background: #157347; }
+			.btn-auto { background: #fd7e14; color: white; }
+			.btn-auto:hover { background: #e06d10; }
+			.btn-reset { background: #dc3545; color: white; }
+			.btn-reset:hover { background: #bb2d3b; }
+			
+			/* Workspace & Kertas */
+			.workspace-container { position: relative; width: 100%; background: #FDF4FF; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; align-items: flex-start; }
+			.zoom-controls { display: flex; flex-direction: row; gap: 8px; z-index: 50; margin-bottom: 15px; width: 100%; justify-content: center; }
+			.paper-wrapper { display: flex; align-items: flex-start; justify-content: center; width: 100%; height: 55vh; overflow: auto; padding-bottom: 10px; }
+			
+			.workspace { display: flex; flex-direction: column; gap: 20px; align-items: center; width: auto; }
+			.page-container { position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2); background: white; margin-bottom: 10px; }
+			
+			.paper-page { background: white; position: absolute; top: 0; left: 0; transform-origin: top left; display: flex; flex-wrap: wrap; align-content: flex-start; transition: padding 0.3s, gap 0.3s; }
+			
+			/* Item Foto & Tombol Bulat Cerdas */
+			.photo-item { 
+			position: relative; 
+			overflow: visible; 
+			background: #eee; 
+			transition: width 0.3s, height 0.3s; 
+			cursor: grab; 
+			container-type: inline-size; 
+			}
+			.photo-item:active { cursor: grabbing; }
+			.photo-item.dragging { opacity: 0.4; }
+			.photo-item img { width: 100%; height: 100%; display: block; }
+			.photo-item img.stretch-off { object-fit: cover; }
+			.photo-item img.stretch-on { object-fit: fill; }
+			
+			.photo-actions { 
+			display: none; 
+			position: absolute; 
+			top: 5px; 
+			left: 50%; 
+			transform: translateX(-50%); 
+			background: transparent; 
+			padding: 0; 
+			z-index: 30; 
+			flex-wrap: wrap; 
+			justify-content: center; 
+			gap: 6px; 
+			width: 85%; 
+			}
+			.photo-item:hover .photo-actions { display: flex; } 
+			
+			.photo-action-btn { 
+			background: rgba(255, 255, 255, 0.95); 
+			border: 1px solid #ddd; 
+			width: clamp(26px, 22cqi, 50px); 
+			aspect-ratio: 1; 
+			height: auto; 
+			border-radius: 50%; 
+			font-size: clamp(12px, 10cqi, 22px); 
+			cursor: pointer; 
+			display: flex; 
+			align-items: center; 
+			justify-content: center; 
+			font-weight: bold; 
+			transition: 0.2s; 
+			box-shadow: 0 2px 6px rgba(0,0,0,0.25); 
+			}
+			.photo-action-btn:hover { background: #E9D5FF; transform: scale(1.15); }
+			
+			/* Marking Lines (Siku L) Dinamis */
+			.crop-mark { position: absolute; border: 0.5px solid #888888; z-index: 10; width: 2mm; height: 2mm; transition: all 0.3s; margin: -0.25px; pointer-events: none; }
+			.paper-page:not(.show-marks) .crop-mark { display: none; }
+			.paper-page.show-marks .crop-mark { display: block; }
+			
+			.mark-tl { top: var(--mark-offset); left: var(--mark-offset); border-width: 1px 0 0 1px; }
+			.mark-tr { top: var(--mark-offset); right: var(--mark-offset); border-width: 1px 1px 0 0; }
+			.mark-bl { bottom: var(--mark-offset); left: var(--mark-offset); border-width: 0 0 1px 1px; }
+			.mark-br { bottom: var(--mark-offset); right: var(--mark-offset); border-width: 0 1px 1px 0; }
+			
+			.btn-zoom { background: white; border: 1px solid #ccc; color: #333; font-size: 14px; border-radius: 6px; cursor: pointer; padding: 8px 16px; transition: .2s; box-shadow: 0 2px 5px rgba(0,0,0,.1); }
+			
+			/* Dropdown Export */
+			.export-container { position: relative; display: inline-block; }
+			.btn-export { background: #198754; color: white; border: none; font-size: 14px; border-radius: 6px; cursor: pointer; padding: 8px 16px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,.1); transition: .2s; display: flex; align-items: center; gap: 4px; }
+			.btn-export:hover { background: #157347; }
+			.export-menu { display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: white; min-width: 120px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 6px; z-index: 100; margin-top: 5px; overflow: hidden; border: 1px solid #ddd; }
+			.export-menu.show { display: block; }
+			.export-item { background: none; border: none; width: 100%; padding: 10px 16px; text-align: left; font-size: 14px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: background 0.2s; }
+			.export-item:hover { background: #f1f3f5; }
+			
+			/* Pop-Up Modal Crop */
+			.crop-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+			.crop-modal.active { display: flex; }
+			.crop-container-box { width: 100%; max-width: 600px; height: 55vh; background: #fff; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+			.crop-container-box img { max-width: 100%; max-height: 100%; display: block; }
+			.crop-actions { display: flex; flex-wrap: nowrap; gap: 10px; overflow-x: auto; margin-top: 10px; }
+			.crop-actions .btn-control { padding: 10px 15px; white-space: nowrap; }
+			
+			/* TAMPILAN PC / LAPTOP */
+			@media (min-width: 768px) {
+			body { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+			.menu { grid-template-columns: repeat(4, 1fr); }
+			.page.active { display: flex; flex-direction: column; flex-grow: 1; margin: 15px; overflow: hidden; }
+			.main-content { flex-direction: row; flex-grow: 1; overflow: hidden; }
+			.sidebar-form { width: 380px; flex-shrink: 0; height: 100%; overflow-y: auto; }
+			.workspace-container { flex-direction: row; align-items: flex-start; justify-content: center; height: 100%; padding: 20px; overflow: hidden; }
+			.zoom-controls { flex-direction: column; width: auto; margin-bottom: 0; margin-right: 20px; justify-content: flex-start; margin-top: 0; }
+			.btn-zoom { padding: 8px 12px; width: 100%; }
+			.paper-wrapper { flex-grow: 1; height: 100%; max-height: none; }
+			.export-menu { top: 0; left: 100%; transform: translateX(8px); margin-top: 0; }
+			}
+		</style>
+	</head>
+	
+	<body>
+		<header id="header">Studio Cetak Foto</header>
+		
+		<div id="menu" class="menu">
+			<button onclick="buka('pasfoto')"><div class="icon">🖼️</div>Pas Foto</button>
+			<button onclick="buka('gridkertas')"><div class="icon">🔲</div>Grid / Kertas</button>
+			<button onclick="buka('customfoto')"><div class="icon">✏️</div>Custom</button>
+			<button onclick="alert('Masih dalam pengembangan...')"><div class="icon">📷</div>Polaroid</button>
+			<button onclick="buka('hitunggambar')"><div class="icon">🧮</div>Hitung Gambar</button>
+		</div>
+		
+		<div id="pasfoto" class="page">
+			<div class="page-header">
+				<h2>Pas Foto Studio</h2>
+				<span class="back-link" onclick="location.reload()" title="Kembali ke Menu">🏠</span>
+			</div>
+			<div class="main-content">
+				<div class="sidebar-form">
+					<div class="form-group">
+						<label>Ukuran Kertas</label>
+						<select id="paperSize" onchange="toggleCustomPaperInput('pasfoto'); renderUlangKertas('pasfoto', 'paperSize')">
+							<option value="a4">A4 (21 x 29.7 cm)</option>
+							<option value="a5">A5 (14.8 x 21 cm)</option>
+							<option value="a6">A6 (10.5 x 14.8 cm)</option>
+							<option value="3r" selected>3R (8.9 x 12.7 cm)</option>
+							<option value="4r">4R (10.2 x 15.2 cm)</option>
+							<option value="5r">5R (12.7 x 17.8 cm)</option>
+							<option value="6r">6R (15.2 x 20.3 cm)</option>
+							<option value="custom">Custom (Pilih Ukuran)</option>
+						</select>
+					</div>
+					<div class="form-group" id="groupCustomPaper_pasfoto" style="display: none;">
+						<label>Ukuran Custom (cm)</label>
+						<input type="number" id="customPaperW_pasfoto" value="20" min="1" step="0.1" placeholder="Lebar" oninput="renderUlangKertas('pasfoto', 'paperSize')">
+						<span style="align-self: center;">x</span>
+						<input type="number" id="customPaperH_pasfoto" value="30" min="1" step="0.1" placeholder="Tinggi" oninput="renderUlangKertas('pasfoto', 'paperSize')">
+					</div>
+					<div class="form-group">
+						<label>Ukuran Foto</label>
+						<select id="photoSize" style="flex: 1;">
+							<option value="20x28">2x3 cm</option>
+							<option value="28x38">3x4 cm</option>
+							<option value="38x56">4x6 cm</option>
+						</select>
+						<label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer; min-width: unset; flex: unset; font-size: 12px; font-weight: bold; color: #198754;" title="Putar 90 derajat saat dimasukkan ke halaman">
+							<input type="checkbox" id="rotate90Check" style="width: 16px; height: 16px;"> Rotate 90°
+						</label>
+					</div>
+					<div class="form-group">
+						<label>Jarak / Gap (mm)</label>
+						<input type="number" id="gapInput" value="2" min="0" oninput="reflowHalaman()">
+					</div>
+					<div class="form-group">
+						<label>Margin (mm)</label>
+						<input type="number" id="marginInput" value="3" min="0" oninput="reflowHalaman()">
+					</div>
+					<div class="form-group">
+						<label>QTY (Jumlah)</label>
+						<input type="number" id="qtyInput" value="1" min="1">
+					</div>
+					<div class="form-group">
+						<label>Pilih Gambar</label>
+						<button class="btn-action uploader-btn">📁 Upload Foto</button>
+					</div>
+					<div class="form-group">
+						<label></label> 
+						<div style="flex: 1.5; width: 100%;">
+							<label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: 100%; flex: unset; min-width: unset;">
+								<input type="checkbox" id="showMarking" onchange="reflowHalaman()" style="width: 18px; height: 18px;">
+								<span style="font-weight: bold; color: #198754; font-size: 13px;">📐 Marking</span>
+							</label>
+						</div>
+					</div>
+					<div class="button-group">
+						<button class="btn-control btn-add" onclick="aksiTambah()">➕ Tambah</button>
+						<button class="btn-control btn-auto" onclick="aksiOtomatis()">✨ Otomatis</button>
+						<button class="btn-control btn-reset" onclick="aksiResetForm('pasfoto')">🧹 Reset</button>
+					</div>
+				</div>
+				<div class="workspace-container">
+					<div class="zoom-controls">
+						<button class="btn-zoom" onclick="ubahZoom(0.1)">➕</button>
+						<button class="btn-zoom" onclick="ubahZoom(-0.1)">➖</button>
+						<button class="btn-zoom" onclick="resetZoom()">🔄</button>
+						<div class="export-container">
+							<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'RataPas')">☰</button>
+							<div id="RataPas" class="export-menu">
+								<button class="export-item" onclick="aksiRata('flex-start')">◀ Kiri</button>
+								<button class="export-item" onclick="aksiRata('center')">⬌ Tengah</button>
+								<button class="export-item" onclick="aksiRata('flex-end')">▶ Kanan</button>
+							</div>
+						</div>
+						<div class="export-container">
+							<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'exportMenuPas')">📤</button>
+							<div id="exportMenuPas" class="export-menu">
+								<button class="export-item" onclick="aksiExport('JPEG')">🖼️ JPEG</button>
+								<button class="export-item" onclick="aksiExport('PDF')">📄 PDF</button>
+								<button class="export-item" onclick="aksiExport('Print')">🖨️ Print</button>
+							</div>
+						</div>
+					</div>
+					<div class="paper-wrapper">
+						<div id="workspacePas" class="workspace"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div id="gridkertas" class="page">
+			<div class="page-header">
+				<h2>Grid / Kertas Studio</h2>
+				<span class="back-link" onclick="location.reload()" title="Kembali ke Menu">🏠</span>
+			</div>
+			<div class="main-content">
+				<div class="sidebar-form">
+					<div class="form-group">
+						<label>Ukuran Kertas</label>
+						<select id="gridPaperSize" onchange="toggleCustomPaperInput('gridkertas'); renderUlangKertas('gridkertas', 'gridPaperSize')">
+							<option value="a4" selected>A4 (21 x 29.7 cm)</option>
+							<option value="a5">A5 (14.8 x 21 cm)</option>
+							<option value="a6">A6 (10.5 x 14.8 cm)</option>
+							<option value="3r">3R (8.9 x 12.7 cm)</option>
+							<option value="4r">4R (10.2 x 15.2 cm)</option>
+							<option value="5r">5R (12.7 x 17.8 cm)</option>
+							<option value="6r">6R (15.2 x 20.3 cm)</option>
+							<option value="custom">Custom (Pilih Ukuran)</option>
+						</select>
+					</div>
+					<div class="form-group" id="groupCustomPaper_gridkertas" style="display: none;">
+						<label>Ukuran Custom (cm)</label>
+						<input type="number" id="customPaperW_gridkertas" value="20" min="1" step="0.1" placeholder="Lebar" oninput="renderUlangKertas('gridkertas', 'gridPaperSize')">
+						<span style="align-self: center;">x</span>
+						<input type="number" id="customPaperH_gridkertas" value="30" min="1" step="0.1" placeholder="Tinggi" oninput="renderUlangKertas('gridkertas', 'gridPaperSize')">
+					</div>
+					<div class="form-group">
+						<label for="gridKolom">Kolom / Baris</label>
+						<input type="number" id="gridKolom" value="1" min="1" oninput="reflowHalaman()" style="width: 60px;">
+						<span>/</span>
+						<input type="number" id="gridBaris" value="2" min="1" oninput="reflowHalaman()" style="width: 60px;">
+					</div>
+					<div class="form-group">
+						<label></label> 
+						<div style="flex: 1.5; width: 100%;">
+							<label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: 100%; flex: unset; min-width: unset;">
+								<input type="checkbox" id="gridStretch" style="width: 18px; height: 18px;" onchange="reflowHalaman()">
+								<span style="font-weight: bold; color: #198754; font-size: 13px;">↕ Stretch</span>
+							</label>
+						</div>
+					</div>
+					<input type="number" id="gridGapInput" value="6" min="0" oninput="reflowHalaman()" hidden>
+					<div class="form-group">
+						<label>Margin (mm)</label>
+						<input type="number" id="gridMarginInput" value="3" min="0" oninput="reflowHalaman()">
+					</div>
+					<div class="form-group">
+						<label>QTY (Jumlah)</label>
+						<input type="number" id="gridQtyInput" value="1" min="1">
+					</div>
+					<div class="form-group">
+						<label>Pilih Gambar</label>
+						<button class="btn-action uploader-btn">📁 Upload Foto</button>
+					</div>
+					<div class="form-group">
+						<label></label> 
+						<div style="flex: 1.5; width: 100%;">
+							<label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: 100%; flex: unset; min-width: unset;">
+								<input type="checkbox" id="gridShowMarking" onchange="reflowHalaman()" style="width: 18px; height: 18px;">
+								<span style="font-weight: bold; color: #198754; font-size: 13px;">📐 Marking</span>
+							</label>
+						</div>
+					</div>
+					<div class="button-group">
+						<button class="btn-control btn-add" onclick="aksiTambah()">➕ Tambah</button>
+						<button class="btn-control btn-auto" onclick="aksiOtomatis()">✨ Otomatis</button>
+						<button class="btn-control btn-reset" onclick="aksiResetForm('gridkertas')">🧹 Reset</button>
+					</div>
+				</div>
+				<div class="workspace-container">
+					<div class="zoom-controls">
+						<button class="btn-zoom" onclick="ubahZoom(0.1)">➕</button>
+						<button class="btn-zoom" onclick="ubahZoom(-0.1)">➖</button>
+						<button class="btn-zoom" onclick="resetZoom()">🔄</button>
+						<div class="export-container">
+							<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'RataGrid')">☰</button>
+							<div id="RataGrid" class="export-menu">
+								<button class="export-item" onclick="aksiRata('flex-start')">◀ Kiri</button>
+								<button class="export-item" onclick="aksiRata('center')">⬌ Tengah</button>
+								<button class="export-item" onclick="aksiRata('flex-end')">▶ Kanan</button>
+							</div>
+						</div>
+						<div class="export-container">
+							<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'exportMenuGrid')">📤</button>
+							<div id="exportMenuGrid" class="export-menu">
+								<button class="export-item" onclick="aksiExport('JPEG')">🖼️ JPEG</button>
+								<button class="export-item" onclick="aksiExport('PDF')">📄 PDF</button>
+								<button class="export-item" onclick="aksiExport('Print')">🖨️ Print</button>
+							</div>
+						</div>
+					</div>
+					<div class="paper-wrapper">
+						<div id="workspaceGrid" class="workspace"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div id="customfoto" class="page">
+			<div class="page-header">
+				<h2>Custom Foto Studio</h2>
+				<span class="back-link" onclick="location.reload()" title="Kembali ke Menu">🏠</span>
+			</div>
+			<div class="main-content">
+				<div class="sidebar-form">
+					<div class="form-group">
+						<label>Ukuran Kertas</label>
+						<select id="customPaperSize" onchange="toggleCustomPaperInput('customfoto'); renderUlangKertas('customfoto', 'customPaperSize')">
+							<option value="a4">A4 (21 x 29.7 cm)</option>
+							<option value="a5">A5 (14.8 x 21 cm)</option>
+							<option value="a6">A6 (10.5 x 14.8 cm)</option>
+							<option value="3r" selected>3R (8.9 x 12.7 cm)</option>
+							<option value="4r">4R (10.2 x 15.2 cm)</option>
+							<option value="5r">5R (12.7 x 17.8 cm)</option>
+							<option value="6r">6R (15.2 x 20.3 cm)</option>
+							<option value="custom">Custom (Pilih Ukuran)</option>
+						</select>
+					</div>
+					<div class="form-group" id="groupCustomPaper_customfoto" style="display: none;">
+						<label>Ukuran Custom (cm)</label>
+						<input type="number" id="customPaperW_customfoto" value="20" min="1" step="0.1" placeholder="Lebar" oninput="renderUlangKertas('customfoto', 'customPaperSize')">
+						<span style="align-self: center;">x</span>
+						<input type="number" id="customPaperH_customfoto" value="30" min="1" step="0.1" placeholder="Tinggi" oninput="renderUlangKertas('customfoto', 'customPaperSize')">
+					</div>
+					<div class="form-group">
+						<label for="gridKolom">Panjang / Lebar (cm)</label>
+						<input type="number" id="customPanjang" value="10" min="0.1" step="0.1" style="flex: 1;" oninput="reflowHalaman()">
+						<span style="align-self: center;">/</span>
+						<input type="number" id="customLebar" value="10" min="0.1" step="0.1" style="flex: 1;" oninput="reflowHalaman()">
+					</div>
+					<div class="form-group">
+						<label></label> 
+						<label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: 100%; flex: unset; min-width: unset;">
+							<input type="checkbox" id="customStretch" style="width: 18px; height: 18px;" onchange="reflowHalaman()">
+							<span style="font-weight: bold; color: #198754; font-size: 13px;">↕ Stretch</span>
+						</label>
+					</div>
+					<div class="form-group">
+						<label>Jarak / Gap (mm)</label>
+						<input type="number" id="customGapInput" value="2" min="0" oninput="reflowHalaman()">
+					</div>
+					<div class="form-group">
+						<label>Margin (mm)</label>
+						<input type="number" id="customMarginInput" value="3" min="0" oninput="reflowHalaman()">
+					</div>
+					<div class="form-group">
+						<label>QTY (Jumlah)</label>
+						<input type="number" id="customQtyInput" value="1" min="1">
+					</div>
+					<div class="form-group">
+						<label>Pilih Gambar</label>
+						<button class="btn-action uploader-btn">📁 Upload Foto</button>
+					</div>
+					<div class="form-group">
+						<label></label> 
+						<div style="flex: 1.5; width: 100%;">
+							<label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: 100%; flex: unset; min-width: unset;">
+								<input type="checkbox" id="customShowMarking" onchange="reflowHalaman()" style="width: 18px; height: 18px;">
+								<span style="font-weight: bold; color: #198754; font-size: 13px;">📐 Marking</span>
+							</label>
+						</div>
+					</div>
+					<div class="button-group">
+						<button class="btn-control btn-add" onclick="aksiTambah()">➕ Tambah</button>
+						<button class="btn-control btn-auto" onclick="aksiOtomatis()">✨ Otomatis</button>
+						<button class="btn-control btn-reset" onclick="aksiResetForm('customfoto')">🧹 Reset</button>
+					</div>
+				</div>
+				<div class="workspace-container">
+					<div class="zoom-controls">
+						<button class="btn-zoom" onclick="ubahZoom(0.1)">➕</button>
+						<button class="btn-zoom" onclick="ubahZoom(-0.1)">➖</button>
+						<button class="btn-zoom" onclick="resetZoom()">🔄</button>
+						<div class="export-container">
+							<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'RataCustom')">☰</button>
+							<div id="RataCustom" class="export-menu">
+								<button class="export-item" onclick="aksiRata('flex-start')">◀ Kiri</button>
+								<button class="export-item" onclick="aksiRata('center')">⬌ Tengah</button>
+								<button class="export-item" onclick="aksiRata('flex-end')">▶ Kanan</button>
+							</div>
+						</div>
+						<div class="export-container">
+							<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'exportMenuCustom')">📤</button>
+							<div id="exportMenuCustom" class="export-menu">
+								<button class="export-item" onclick="aksiExport('JPEG')">🖼️ JPEG</button>
+								<button class="export-item" onclick="aksiExport('PDF')">📄 PDF</button>
+								<button class="export-item" onclick="aksiExport('Print')">🖨️ Print</button>
+							</div>
+						</div>
+					</div>
+					<div class="paper-wrapper">
+						<div id="workspaceCustom" class="workspace"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div id="hitunggambar" class="page">
+			<div class="page-header">
+				<h2>Simulasi & Hitung Jumlah Gambar</h2>
+				<span class="back-link" onclick="location.reload()" title="Kembali ke Menu">🏠</span>
+			</div>
+			<div class="main-content">
+				<div class="sidebar-form">
+					<div class="form-group">
+						<label>Ukuran Kertas</label>
+						<select id="calcPaperSize" onchange="toggleCustomPaperInput('hitunggambar'); hitungKapasitasOtomatis()">
+							<option value="a4" selected>A4 (21 x 29.7 cm)</option>
+							<option value="a5">A5 (14.8 x 21 cm)</option>
+							<option value="a6">A6 (10.5 x 14.8 cm)</option>
+							<option value="3r">3R (8.9 x 12.7 cm)</option>
+							<option value="4r">4R (10.2 x 15.2 cm)</option>
+							<option value="5r">5R (12.7 x 17.8 cm)</option>
+							<option value="6r">6R (15.2 x 20.3 cm)</option>
+							<option value="custom">Custom (Pilih Ukuran)</option>
+						</select>
+					</div>
+					<div class="form-group" id="groupCustomPaper_hitunggambar" style="display: none;">
+						<label>Ukuran Custom (cm)</label>
+						<input type="number" id="customPaperW_hitunggambar" value="21" min="1" step="0.1" placeholder="Lebar" oninput="hitungKapasitasOtomatis()">
+						<span style="align-self: center;">x</span>
+						<input type="number" id="customPaperH_hitunggambar" value="33" min="1" step="0.1" placeholder="Tinggi" oninput="hitungKapasitasOtomatis()">
+					</div>
+					<div class="form-group">
+						<label>Panjang / Lebar (cm)</label>
+						<input type="number" id="calcFotoW" value="3" min="0.1" step="0.1" style="flex: 1;" oninput="hitungKapasitasOtomatis()">
+						<span style="align-self: center;">x</span>
+						<input type="number" id="calcFotoH" value="3" min="0.1" step="0.1" style="flex: 1;" oninput="hitungKapasitasOtomatis()">
+					</div>
+					<div class="form-group">
+						<label>Gap / Margin (mm)</label>
+						<input type="number" id="calcGap" value="2" min="0" step="1" style="flex: 1;" oninput="hitungKapasitasOtomatis()">
+						<span style="align-self: center;">&</span>
+						<input type="number" id="calcMargin" value="10" min="3" step="1" style="flex: 1;" oninput="hitungKapasitasOtomatis()">
+					</div>
+					<div class="form-group">
+						<label>Bentuk Gambar</label>
+						<select id="calcShape" onchange="hitungKapasitasOtomatis()">
+							<option value="square">Persegi (Kotak)</option>
+							<option value="circle">Bulat (Lingkaran)</option>
+						</select>
+					</div>
+					<div style="background:#E9D5FF; padding:10px 15px; border-radius:8px; display:flex; gap:10px; align-items:center; margin-top:15px;">
+						<span style="flex:1; font-weight:bold; color:#555; font-size:13px;">Estimasi Jumlah:</span>
+						<div style="flex:1; text-align:right;">
+							<b id="resultCount" style="font-size:18px; color:#198754; line-height:1.2; display:block;">0 Foto</b>
+							<small id="resultDetail" style="color:#666; font-size:11px; display:block;">-</small>
+						</div>
+					</div>
+				</div>
+				<div class="workspace-container">
+					<div class="paper-wrapper">
+						<div id="workspaceCalc" class="workspace"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div id="cropModal" class="crop-modal">
+			<div class="crop-container-box">
+				<img id="cropImage" src="">
+			</div>
+			<div class="crop-actions">
+				<button class="btn-control btn-zoom" style="padding: 10px 15px;" onclick="cropper.rotate(-90)">↺</button>
+				<button class="btn-control btn-zoom" style="padding: 10px 15px;" onclick="cropper.rotate(90)">↻</button>
+				<button class="btn-control btn-add" style="padding: 10px 20px;" onclick="terapkanCrop()">✂️ Crop</button>
+				<button class="btn-control btn-reset" style="padding: 10px 20px;" onclick="batalCrop()">❌ Batal</button>
+			</div>
+		</div>
+		
+		<script>
+		
+		if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => {
+          console.log('Service Worker berhasil didaftarkan: ', reg.scope);
+        })
+        .catch(err => {
+          console.log('Pendaftaran Service Worker gagal: ', err);
+        });
+    });
+  }
+  
+			const PX_PER_MM = 3.7795;
+			let manualZoom = 1;
+			let halamanAktif = '';
+			let currentImgSrc = null;
+			let cropper = null;
+			let targetRecropElement = null;
+			
+			const fileInput = document.createElement('input');
+			fileInput.type = 'file';
+			fileInput.accept = 'image/*';
+			fileInput.style.display = 'none';
+			document.body.appendChild(fileInput);
+			
+			document.querySelectorAll('.uploader-btn').forEach(btn => {
+				btn.addEventListener('click', () => {
+					targetRecropElement = null;
+					fileInput.click();
+				});
+			});
+			
+			fileInput.addEventListener('change', (e) => {
+				const file = e.target.files[0];
+				if(!file) return;
+				
+				// Gunakan FileReader untuk kestabilan penuh Cropper.js di semua browser
+				const reader = new FileReader();
+				reader.onload = (event) => {
+					const cropImgEl = document.getElementById('cropImage');
+					
+					// Atur sumber gambar modal crop
+					cropImgEl.src = event.target.result;
+					document.getElementById('cropModal').classList.add('active');
+					
+					// Hancurkan instance cropper lama jika ada
+					if (cropper) {
+						cropper.destroy();
+						cropper = null;
+					}
+					
+					// Tentukan rasio potong berdasarkan pengaturan menu
+					let p = dapatkanPengaturan();
+					let cropperRatio = NaN;
+					if (!p.stretch && p.w_mm > 0 && p.h_mm > 0) {
+						cropperRatio = p.w_mm / p.h_mm;
+					}
+					
+					// Inisialisasi Cropper setelah gambar pada elemen modal benar-benar dimuat
+					cropImgEl.onload = () => {
+						if (cropper) cropper.destroy();
+						cropper = new Cropper(cropImgEl, {
+							viewMode: 1,
+							autoCropArea: 1,
+							aspectRatio: cropperRatio,
+							responsive: true,
+							restore: false
+						});
+						// Copot event listener agar tidak berulang
+						cropImgEl.onload = null;
+					};
+				};
+				
+				reader.readAsDataURL(file);
+				fileInput.value = ""; 
+			});
+			
+			function terapkanCrop() {
+				if(!cropper) return;
+				
+				// Ambil hasil crop dengan resolusi tinggi & aman
+				const canvas = cropper.getCroppedCanvas({
+					imageSmoothingEnabled: true,
+					imageSmoothingQuality: 'high'
+				});
+				
+				if (!canvas) return;
+				
+				// Konversi ke JPEG kualitas 0.95 (Sangat tajam & hemat memori)
+				const newSrc = canvas.toDataURL('image/jpeg', 0.95);
+				
+				if (targetRecropElement) {
+					let imgEl = targetRecropElement.querySelector('img');
+					if(imgEl) imgEl.src = newSrc;
+					targetRecropElement = null;
+					updateLayoutRealtime();
+					} else {
+					currentImgSrc = newSrc;
+				}
+				
+				// Bersihkan instance cropper dan tutup modal
+				cropper.destroy();
+				cropper = null;
+				document.getElementById('cropModal').classList.remove('active');
+			}
+			
+			function batalCrop() {
+				targetRecropElement = null;
+				document.getElementById('cropModal').classList.remove('active');
+			}
+			
+			function getWorkspaceId(pageId) {
+				if(pageId === 'pasfoto') return 'workspacePas';
+				if(pageId === 'gridkertas') return 'workspaceGrid';
+				if(pageId === 'customfoto') return 'workspaceCustom';
+				if(pageId === 'hitunggambar') return 'workspaceCalc';
+				return '';
+			}
+			
+			function getSelectId(pageId) {
+				if(pageId === 'pasfoto') return 'paperSize';
+				if(pageId === 'gridkertas') return 'gridPaperSize';
+				if(pageId === 'customfoto') return 'customPaperSize';
+				if(pageId === 'hitunggambar') return 'calcPaperSize';
+				return '';
+			}
+			
+			function toggleCustomPaperInput(pageId) {
+				const selectEl = document.getElementById(getSelectId(pageId));
+				const groupEl = document.getElementById(`groupCustomPaper_${pageId}`);
+				if (selectEl && groupEl) {
+					if (selectEl.value === 'custom') {
+						groupEl.style.display = 'flex';
+						} else {
+						groupEl.style.display = 'none';
+					}
+				}
+			}
+			
+			function buka(id) {
+				document.getElementById("header").style.display = "none";
+				document.getElementById("menu").style.display = "none";
+				document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+				document.getElementById(id).classList.add("active");
+				halamanAktif = id;
+				
+				setTimeout(() => {
+					toggleCustomPaperInput(id);
+					if (id === 'hitunggambar') {
+						hitungKapasitasOtomatis();
+						} else {
+						renderUlangKertas(id, getSelectId(id));
+					}
+				}, 150);
+			}
+			
+			function getPaperDimensions(pageId, s) {
+				const sizes = {'3r':{w:89,h:127},'4r':{w:102,h:152},'5r':{w:127,h:178},'6r':{w:152,h:203},'a4':{w:210,h:297},'a5':{w:148,h:210},'a6':{w:105,h:148}};
+				if (s === 'custom') {
+					const wInput = document.getElementById(`customPaperW_${pageId}`);
+					const hInput = document.getElementById(`customPaperH_${pageId}`);
+					let w = wInput ? parseFloat(wInput.value) * 10 : 200;
+					let h = hInput ? parseFloat(hInput.value) * 10 : 300;
+					return { w: w, h: h };
+				}
+				return sizes[s] || sizes['3r'];
+			}
+			
+			function ubahZoom(d) {
+				manualZoom = Math.max(0.3, Math.min(4, manualZoom + d));
+				terapkanZoom();
+			}
+			
+			function resetZoom() {
+				manualZoom = 1;
+				terapkanZoom();
+			}
+			
+			function terapkanZoom() {
+				let targetWorkspace = getWorkspaceId(halamanAktif);
+				const workspace = document.getElementById(targetWorkspace);
+				if (!workspace) return;
+				const wrapper = workspace.closest('.workspace-container').querySelector('.paper-wrapper');
+				const containers = workspace.querySelectorAll('.page-container');
+				if (containers.length === 0) return;
+				
+				const firstCont = containers[0];
+				const origW = parseFloat(firstCont.dataset.w);
+				const origH = parseFloat(firstCont.dataset.h);
+				
+				const availW = wrapper.clientWidth - 40;
+				const availH = wrapper.clientHeight - 40;
+				
+				const scaleX = availW / origW;
+				const scaleY = availH / origH;
+				
+				let autoFitScale = Math.min(scaleX, scaleY);
+				const finalScale = autoFitScale * manualZoom;
+				
+				containers.forEach(cont => {
+					cont.style.width = `${origW * finalScale}px`;
+					cont.style.height = `${origH * finalScale}px`;
+					const paper = cont.querySelector('.paper-page');
+					if(paper) paper.style.transform = `scale(${finalScale})`;
+				});
+			}
+			
+			function tambahHalamanKertas(workspaceId, wPx, hPx) {
+				const workspace = document.getElementById(workspaceId);
+				let container = document.createElement('div');
+				container.className = 'page-container';
+				container.dataset.w = wPx;
+				container.dataset.h = hPx;
+				
+				let pageEl = document.createElement('div');
+				pageEl.className = 'paper-page';
+				pageEl.style.width = `${wPx}px`; 
+				pageEl.style.height = `${hPx}px`;
+				
+				pageEl.addEventListener('dragover', e => e.preventDefault());
+				pageEl.addEventListener('drop', e => {
+					e.preventDefault();
+					const draggedSrcId = e.dataTransfer.getData('text/plain');
+					const draggedEl = document.getElementById(draggedSrcId);
+					if (draggedEl) {
+						const afterElement = getDragAfterElement(pageEl, e.clientY);
+						if (afterElement == null) {
+							pageEl.appendChild(draggedEl);
+							} else {
+							pageEl.insertBefore(draggedEl, afterElement);
+						}
+						reflowHalaman(); 
+					}
+				});
+				
+				container.appendChild(pageEl);
+				workspace.appendChild(container);
+				return pageEl;
+			}
+			
+			function getDragAfterElement(container, y) {
+				const draggableElements = [...container.querySelectorAll('.photo-item:not(.dragging)')];
+				return draggableElements.reduce((closest, child) => {
+					const box = child.getBoundingClientRect();
+					const offset = y - box.top - box.height / 2;
+					if (offset < 0 && offset > closest.offset) {
+						return { offset: offset, element: child };
+						} else {
+						return closest;
+					}
+				}, { offset: Number.NEGATIVE_INFINITY }).element;
+			}
+			
+			function reflowHalaman() {
+				if (!halamanAktif || halamanAktif === 'hitunggambar') return;
+				updateLayoutRealtime(); 
+				
+				let targetWorkspaceId = getWorkspaceId(halamanAktif);
+				let workspace = document.getElementById(targetWorkspaceId);
+				if(!workspace) return;
+				
+				let p = dapatkanPengaturan();
+				let existingImages = [];
+				let items = workspace.querySelectorAll('.photo-item');
+				
+				items.forEach(item => {
+					let img = item.querySelector('img');
+					if(img) {
+						let cName = img.className;
+						if (halamanAktif !== 'pasfoto') {
+							cName = p.stretch ? 'stretch-on' : 'stretch-off';
+						}
+						
+						existingImages.push({
+							src: img.src,
+							className: cName,
+							w: item.style.width,
+							h: item.style.height
+						});
+					}
+				});
+				
+				workspace.innerHTML = ''; 
+				
+				const selectId = getSelectId(halamanAktif);
+				const sizeId = document.getElementById(selectId).value;
+				const paperDim = getPaperDimensions(halamanAktif, sizeId);
+				const paperW = paperDim.w * PX_PER_MM;
+				const paperH = paperDim.h * PX_PER_MM;
+				
+				tambahHalamanKertas(targetWorkspaceId, paperW, paperH);
+				
+				if (existingImages.length > 0) {
+					susunUlangGambar(existingImages, targetWorkspaceId, halamanAktif);
+				}
+				updateLayoutRealtime(); 
+			}
+			
+			function renderUlangKertas(pageId, selectId) {
+				manualZoom = 1;
+				let targetWorkspace = getWorkspaceId(pageId);
+				const workspace = document.getElementById(targetWorkspace);
+				if(!workspace) return;
+				
+				let existingImages = [];
+				let items = workspace.querySelectorAll('.photo-item');
+				items.forEach(item => {
+					let img = item.querySelector('img');
+					if(img) {
+						existingImages.push({
+							src: img.src,
+							className: img.className,
+							w: item.style.width,
+							h: item.style.height
+						});
+					}
+				});
+				
+				workspace.innerHTML = ''; 
+				
+				const sizeId = document.getElementById(selectId).value;
+				const paperDim = getPaperDimensions(pageId, sizeId);
+				const paperW = paperDim.w * PX_PER_MM;
+				const paperH = paperDim.h * PX_PER_MM;
+				
+				tambahHalamanKertas(targetWorkspace, paperW, paperH);
+				
+				if (existingImages.length > 0) {
+					susunUlangGambar(existingImages, targetWorkspace, pageId);
+				}
+				
+				updateLayoutRealtime(); 
+			}
+			
+			function susunUlangGambar(images, targetWorkspaceId, pageId) {
+				let workspace = document.getElementById(targetWorkspaceId);
+				if(!workspace) return;
+				
+				let p = dapatkanPengaturan();
+				const selectId = getSelectId(pageId);
+				const sizeId = document.getElementById(selectId).value;
+				const paperDim = getPaperDimensions(pageId, sizeId);
+				
+				const paperWPx = paperDim.w * PX_PER_MM;
+				const paperHPx = paperDim.h * PX_PER_MM;
+				const gapPx = p.gap * PX_PER_MM;
+				
+				let padPx = p.margin * PX_PER_MM;
+				if (p.mark && pageId !== 'gridkertas') padPx += (p.gap / 2) * PX_PER_MM;
+				
+				let pages = workspace.querySelectorAll('.paper-page');
+				
+				pages.forEach(pEl => {
+					pEl.style.padding = `${padPx}px`;
+					pEl.style.gap = `${gapPx}px`;
+					pEl.style.transform = 'none'; 
+				});
+				
+				for(let i=0; i<images.length; i++) {
+					let lastPage = pages[pages.length - 1];
+					let div = buatElemenFoto(images[i].src, images[i].w, images[i].h, images[i].className);
+					lastPage.appendChild(div);
+					
+					const isOverflowing = (lastPage.scrollHeight > lastPage.clientHeight + 2) || (lastPage.scrollWidth > lastPage.clientWidth + 2);
+					if (isOverflowing) {
+						lastPage.removeChild(div);
+						lastPage = tambahHalamanKertas(targetWorkspaceId, paperWPx, paperHPx);
+						pages = workspace.querySelectorAll('.paper-page');
+						lastPage.style.padding = `${padPx}px`;
+						lastPage.style.gap = `${gapPx}px`;
+						lastPage.style.transform = 'none';
+						if (p.mark) lastPage.classList.add('show-marks');
+						lastPage.appendChild(div);
+					}
+				}
+			}
+			
+			function buatElemenFoto(imgSrc, widthPx, heightPx, imgClassName) {
+				let div = document.createElement('div');
+				div.className = 'photo-item';
+				div.id = 'photo_' + Math.random().toString(36).substr(2, 9);
+				div.style.width = widthPx;
+				div.style.height = heightPx;
+				div.style.display = 'flex';
+				div.style.justifyContent = 'center';
+				div.style.alignItems = 'center';
+				div.draggable = true;
+				
+				div.addEventListener('dragstart', (e) => {
+					div.classList.add('dragging');
+					e.dataTransfer.setData('text/plain', div.id);
+				});
+				div.addEventListener('dragend', () => {
+					div.classList.remove('dragging');
+					reflowHalaman(); 
+				});
+				
+				let img = document.createElement('img');
+				img.src = imgSrc;
+				img.className = imgClassName;
+				img.style.width = "100%";
+				img.style.height = "100%";
+				div.appendChild(img);
+				
+				let actionsDiv = document.createElement('div');
+				actionsDiv.className = 'photo-actions';
+				
+				let btnDelete = document.createElement('button');
+				btnDelete.className = 'photo-action-btn';
+				btnDelete.innerHTML = '🗑️';
+				btnDelete.title = 'Hapus Gambar';
+				btnDelete.onclick = (e) => {
+					e.stopPropagation();
+					div.remove();
+					reflowHalaman(); 
+				};
+				
+				let btnCopy = document.createElement('button');
+				btnCopy.className = 'photo-action-btn';
+				btnCopy.innerHTML = '📋';
+				btnCopy.title = 'Kopi Gambar';
+				btnCopy.onclick = (e) => {
+					e.stopPropagation();
+					let cloneDiv = buatElemenFoto(img.src, div.style.width, div.style.height, img.className);
+					div.after(cloneDiv);
+					reflowHalaman(); 
+				};
+				
+				let btnRotate = document.createElement('button');
+				btnRotate.className = 'photo-action-btn';
+				btnRotate.innerHTML = '🔄';
+				btnRotate.title = 'Putar 90 Derajat';
+				btnRotate.onclick = (e) => {
+					e.stopPropagation();
+					let tempImg = new Image();
+					tempImg.src = img.src;
+					tempImg.onload = function() {
+						const canvas = document.createElement('canvas');
+						canvas.width = tempImg.height;
+						canvas.height = tempImg.width;
+						const ctx = canvas.getContext('2d');
+						ctx.translate(canvas.width / 2, canvas.height / 2);
+						ctx.rotate(Math.PI / 2);
+						ctx.drawImage(tempImg, -tempImg.width / 2, -tempImg.height / 2);
+						img.src = canvas.toDataURL('image/jpeg', 1.0);
+						
+						let currentW = div.style.width;
+						div.style.width = div.style.height;
+						div.style.height = currentW;
+						reflowHalaman(); 
+					};
+				};
+				
+				let btnCrop = document.createElement('button');
+				btnCrop.className = 'photo-action-btn';
+				btnCrop.innerHTML = '✂️';
+				btnCrop.title = 'Crop Ulang Gambar';
+				btnCrop.onclick = (e) => {
+					e.stopPropagation();
+					targetRecropElement = div;
+					document.getElementById('cropImage').src = img.src;
+					document.getElementById('cropModal').classList.add('active');
+					
+					let p = dapatkanPengaturan();
+					let cropperRatio = !p.stretch ? (p.w_mm / p.h_mm) : NaN;
+					
+					if(cropper) cropper.destroy();
+					cropper = new Cropper(document.getElementById('cropImage'), {
+						viewMode: 1,
+						autoCropArea: 1,
+						aspectRatio: cropperRatio,
+					});
+				};
+				
+				actionsDiv.appendChild(btnDelete);
+				actionsDiv.appendChild(btnCopy);
+				actionsDiv.appendChild(btnRotate);
+				actionsDiv.appendChild(btnCrop);
+				div.appendChild(actionsDiv);
+				
+				if (halamanAktif !== 'gridkertas') {
+					let marksHTML = `
+					<div class="crop-mark mark-tl"></div>
+					<div class="crop-mark mark-tr"></div>
+					<div class="crop-mark mark-bl"></div>
+					<div class="crop-mark mark-br"></div>
+					`;
+					div.insertAdjacentHTML('beforeend', marksHTML);
+				}
+				
+				return div;
+			}
+			
+			function dapatkanPengaturan() {
+				let p = { w_mm: 0, h_mm: 0, gap: 0, margin: 0, qty: 1, mark: false, stretch: false };
+				
+				if(halamanAktif === 'pasfoto') {
+					const ps = document.getElementById('photoSize').value.split('x');
+					p.w_mm = parseInt(ps[0]); 
+					p.h_mm = parseInt(ps[1]);
+					p.gap = parseFloat(document.getElementById('gapInput').value) || 0;
+					p.margin = parseFloat(document.getElementById('marginInput').value) || 0;
+					p.qty = parseInt(document.getElementById('qtyInput').value) || 1;
+					p.mark = document.getElementById('showMarking').checked;
+					} else if(halamanAktif === 'gridkertas') {
+					const sizeId = document.getElementById('gridPaperSize').value;
+					const paperDim = getPaperDimensions('gridkertas', sizeId);
+					const cols = parseInt(document.getElementById('gridKolom').value) || 1;
+					const rows = parseInt(document.getElementById('gridBaris').value) || 1;
+					p.gap = parseFloat(document.getElementById('gridGapInput').value) || 0;
+					p.margin = parseFloat(document.getElementById('gridMarginInput').value) || 0;
+					p.qty = parseInt(document.getElementById('gridQtyInput').value) || 1;
+					
+					p.w_mm = (paperDim.w - (2 * p.margin) - ((cols - 1) * p.gap)) / cols;
+					p.h_mm = (paperDim.h - (2 * p.margin) - ((rows - 1) * p.gap)) / rows;
+					p.mark = document.getElementById('gridShowMarking').checked;
+					p.stretch = document.getElementById('gridStretch').checked;
+					} else if(halamanAktif === 'customfoto') {
+					p.w_mm = (parseFloat(document.getElementById('customLebar').value) || 0) * 10;
+					p.h_mm = (parseFloat(document.getElementById('customPanjang').value) || 0) * 10;
+					p.gap = parseFloat(document.getElementById('customGapInput').value) || 0;
+					p.margin = parseFloat(document.getElementById('customMarginInput').value) || 0;
+					p.qty = parseInt(document.getElementById('customQtyInput').value) || 1;
+					p.mark = document.getElementById('customShowMarking').checked;
+					p.stretch = document.getElementById('customStretch').checked;
+				}
+				return p;
+			}
+			
+			function updateLayoutRealtime() {
+				if(!halamanAktif || halamanAktif === 'hitunggambar') return;
+				
+				if (halamanAktif === 'gridkertas') {
+					const marginInput = document.getElementById('gridMarginInput');
+					const gapInput = document.getElementById('gridGapInput');
+					if (marginInput && gapInput) {
+						gapInput.value = parseFloat(marginInput.value) * 2;
+					}
+				}
+				
+				let p = dapatkanPengaturan();
+				let workspaceId = getWorkspaceId(halamanAktif);
+				let workspace = document.getElementById(workspaceId);
+				if(!workspace) return;
+				
+				let pages = workspace.querySelectorAll('.paper-page');
+				let padPx = p.margin * PX_PER_MM;
+				if (p.mark && halamanAktif !== 'gridkertas') {
+					padPx += (p.gap / 2) * PX_PER_MM;
+				}
+				
+				let markOffsetPx = (p.gap / 2) * PX_PER_MM;
+				workspace.style.setProperty('--mark-offset', `-${markOffsetPx}px`);
+				
+				if (halamanAktif === 'gridkertas') {
+					let itemWPx = p.w_mm * PX_PER_MM;
+					let itemHPx = p.h_mm * PX_PER_MM;
+					let items = workspace.querySelectorAll('.photo-item');
+					items.forEach(item => {
+						item.style.width = `${itemWPx}px`;
+						item.style.height = `${itemHPx}px`;
+					});
+				}
+				
+				pages.forEach(page => {
+					page.style.padding = `${padPx}px`;
+					page.style.gap = `${p.gap * PX_PER_MM}px`;
+					
+					if (p.mark) page.classList.add('show-marks');
+					else page.classList.remove('show-marks');
+					
+					page.querySelectorAll('.grid-mark-overlay').forEach(el => el.remove());
+					
+					if (halamanAktif === 'gridkertas' && p.mark) {
+						let items = page.querySelectorAll('.photo-item');
+						if (items.length > 0) {
+							let cols = parseInt(document.getElementById('gridKolom').value) || 1;
+							let actualCols = Math.min(items.length, cols);
+							let actualRows = Math.ceil(items.length / cols);
+							
+							let itemWPx = p.w_mm * PX_PER_MM;
+							let itemHPx = p.h_mm * PX_PER_MM;
+							let gapPx = p.gap * PX_PER_MM;
+							
+							let gridWidth = actualCols * itemWPx + (actualCols - 1) * gapPx;
+							let gridHeight = actualRows * itemHPx + (actualRows - 1) * gapPx;
+							let markLengthPx = 2 * PX_PER_MM;
+							
+							for (let c = 1; c < actualCols; c++) {
+								let x = padPx + c * itemWPx + (c - 0.5) * gapPx;
+								let topMark = document.createElement('div');
+								topMark.className = 'grid-mark-overlay';
+								topMark.style.cssText = `position: absolute; background-color: #000; width: 1px; height: 2mm; left: ${x}px; top: ${padPx}px; transform: translateX(-50%); z-index: 50;`;
+								page.appendChild(topMark);
+								
+								let bottomMark = document.createElement('div');
+								bottomMark.className = 'grid-mark-overlay';
+								bottomMark.style.cssText = `position: absolute; background-color: #000; width: 1px; height: 2mm; left: ${x}px; top: ${padPx + gridHeight - markLengthPx}px; transform: translateX(-50%); z-index: 50;`;
+								page.appendChild(bottomMark);
+							}
+							
+							for (let r = 1; r < actualRows; r++) {
+								let y = padPx + r * itemHPx + (r - 0.5) * gapPx;
+								let leftMark = document.createElement('div');
+								leftMark.className = 'grid-mark-overlay';
+								leftMark.style.cssText = `position: absolute; background-color: #000; width: 2mm; height: 1px; top: ${y}px; left: ${padPx}px; transform: translateY(-50%); z-index: 50;`;
+								page.appendChild(leftMark);
+								
+								let rightMark = document.createElement('div');
+								rightMark.className = 'grid-mark-overlay';
+								rightMark.style.cssText = `position: absolute; background-color: #000; width: 2mm; height: 1px; top: ${y}px; left: ${padPx + gridWidth - markLengthPx}px; transform: translateY(-50%); z-index: 50;`;
+								page.appendChild(rightMark);
+							}
+						}
+					}
+				});
+				
+				terapkanZoom();
+			}
+			
+			/* FUNGSIONALITAS HITUNG GAMBAR */
+			function hitungKapasitasOtomatis() {
+				if (halamanAktif !== 'hitunggambar') return;
+				
+				const paperSize = document.getElementById('calcPaperSize').value;
+				const paperDim = getPaperDimensions('hitunggambar', paperSize);
+				
+				const fotoW_mm = (parseFloat(document.getElementById('calcFotoW').value) || 0) * 10;
+				const fotoH_mm = (parseFloat(document.getElementById('calcFotoH').value) || 0) * 10;
+				const gap_mm = parseFloat(document.getElementById('calcGap').value) || 0;
+				const margin_mm = parseFloat(document.getElementById('calcMargin').value) || 0;
+				const shape = document.getElementById('calcShape').value;
+				
+				if (fotoW_mm <= 0 || fotoH_mm <= 0) {
+					document.getElementById('resultCount').textContent = "0 Foto";
+					document.getElementById('resultDetail').textContent = "Ukuran foto tidak valid";
+					return;
+				}
+				
+				const effW = paperDim.w - (2 * margin_mm);
+				const effH = paperDim.h - (2 * margin_mm);
+				
+				if (effW <= 0 || effH <= 0) {
+					document.getElementById('resultCount').textContent = "0 Foto";
+					document.getElementById('resultDetail').textContent = "Margin melebihi ukuran kertas";
+					return;
+				}
+				
+				// --- KALKULASI OPSI A: ORIENTASI UTAMA NORMAL ---
+				const colsA_main = Math.floor((effW + gap_mm) / (fotoW_mm + gap_mm));
+				const rowsA_main = Math.floor((effH + gap_mm) / (fotoH_mm + gap_mm));
+				const totalA_main = Math.max(0, colsA_main) * Math.max(0, rowsA_main);
+				
+				// Hitung sisa ruang bawah untuk Opsi A
+				const usedH_A = rowsA_main * fotoH_mm + (rowsA_main > 0 ? (rowsA_main - 1) * gap_mm : 0);
+				const sisaH_A = effH - usedH_A - (rowsA_main > 0 ? gap_mm : 0);
+				
+				let colsA_extra = 0, rowsA_extra = 0, totalA_extra = 0;
+				if (sisaH_A >= fotoW_mm && totalA_main > 0) {
+					colsA_extra = Math.floor((effW + gap_mm) / (fotoH_mm + gap_mm));
+					rowsA_extra = Math.floor((sisaH_A + gap_mm) / (fotoW_mm + gap_mm));
+					totalA_extra = Math.max(0, colsA_extra) * Math.max(0, rowsA_extra);
+				}
+				const totalA = totalA_main + totalA_extra;
+				
+				// --- KALKULASI OPSI B: ORIENTASI UTAMA DIPUTAR 90° ---
+				const colsB_main = Math.floor((effW + gap_mm) / (fotoH_mm + gap_mm));
+				const rowsB_main = Math.floor((effH + gap_mm) / (fotoW_mm + gap_mm));
+				const totalB_main = Math.max(0, colsB_main) * Math.max(0, rowsB_main);
+				
+				// Hitung sisa ruang bawah untuk Opsi B
+				const usedH_B = rowsB_main * fotoW_mm + (rowsB_main > 0 ? (rowsB_main - 1) * gap_mm : 0);
+				const sisaH_B = effH - usedH_B - (rowsB_main > 0 ? gap_mm : 0);
+				
+				let colsB_extra = 0, rowsB_extra = 0, totalB_extra = 0;
+				if (sisaH_B >= fotoH_mm && totalB_main > 0) {
+					colsB_extra = Math.floor((effW + gap_mm) / (fotoW_mm + gap_mm));
+					rowsB_extra = Math.floor((sisaH_B + gap_mm) / (fotoH_mm + gap_mm));
+					totalB_extra = Math.max(0, colsB_extra) * Math.max(0, rowsB_extra);
+				}
+				const totalB = totalB_main + totalB_extra;
+				
+				// --- PILIH KONTINGENSI TERBAIK (OPSI A ATAU B) ---
+				let layoutData = {};
+				if (totalA >= totalB) {
+					layoutData = {
+						total: totalA,
+						mainCount: totalA_main,
+						mainW: fotoW_mm,
+						mainH: fotoH_mm,
+						extraCount: totalA_extra,
+						extraW: fotoH_mm,
+						extraH: fotoW_mm,
+						detailText: totalA_extra > 0 
+						? `${totalA_main} Foto Tegak + ${totalA_extra} Foto Sisa Bawah (Diputar)`
+						: `${colsA_main} Kolom x ${rowsA_main} Baris`
+					};
+					} else {
+					layoutData = {
+						total: totalB,
+						mainCount: totalB_main,
+						mainW: fotoH_mm,
+						mainH: fotoW_mm,
+						extraCount: totalB_extra,
+						extraW: fotoW_mm,
+						extraH: fotoH_mm,
+						detailText: totalB_extra > 0 
+						? `${totalB_main} Foto Diputar + ${totalB_extra} Foto Sisa Bawah (Tegak)`
+						: `${colsB_main} Kolom x ${rowsB_main} Baris (Diputar 90°)`
+					};
+				}
+				
+				document.getElementById('resultCount').textContent = `${layoutData.total} Foto`;
+				if (layoutData.total > 0) {
+					document.getElementById('resultDetail').textContent = layoutData.detailText;
+					} else {
+					document.getElementById('resultDetail').textContent = 'Ukuran gambar terlalu besar untuk kertas ini';
+				}
+				
+				renderSimulasiVisualCalc(paperDim.w, paperDim.h, margin_mm, gap_mm, shape, layoutData);
+			}
+			
+			function renderSimulasiVisualCalc(paperW_mm, paperH_mm, margin_mm, gap_mm, shape, layoutData) {
+				const workspace = document.getElementById('workspaceCalc');
+				workspace.innerHTML = '';
+				
+				const paperWPx = paperW_mm * PX_PER_MM;
+				const paperHPx = paperH_mm * PX_PER_MM;
+				
+				let container = document.createElement('div');
+				container.className = 'page-container';
+				container.dataset.w = paperWPx;
+				container.dataset.h = paperHPx;
+				
+				let pageEl = document.createElement('div');
+				pageEl.className = 'paper-page';
+				pageEl.style.width = `${paperWPx}px`;
+				pageEl.style.height = `${paperHPx}px`;
+				pageEl.style.padding = `${margin_mm * PX_PER_MM}px`;
+				
+				// --- UBAH DUA BARIS INI UNTUK MEMPOSISIKAN GAMBAR DI TENGAH HALAMAN ---
+				pageEl.style.display = 'flex';
+				pageEl.style.flexWrap = 'wrap';
+				pageEl.style.justifyContent = 'center';   /* Memosisikan secara Horizontal (Tengah Kiri-Kanan) */
+				pageEl.style.alignContent = 'center';     /* Memosisikan secara Vertikal (Tengah Atas-Bawah) */
+				pageEl.style.gap = `${gap_mm * PX_PER_MM}px`;
+				
+				let counter = 1;
+				
+				// 1. Render Grup Foto Utama
+				for (let i = 0; i < layoutData.mainCount; i++) {
+					let box = buatBoxVisualCalc(layoutData.mainW, layoutData.mainH, shape, counter++, '#E9D5FF', '#9333ea');
+					pageEl.appendChild(box);
+				}
+				
+				// 2. Render Grup Foto Ekstra (Sisa Ruang Bawah)
+				for (let j = 0; j < layoutData.extraCount; j++) {
+					let box = buatBoxVisualCalc(layoutData.extraW, layoutData.extraH, shape, counter++, '#FED7AA', '#ea580c');
+					pageEl.appendChild(box);
+				}
+				
+				container.appendChild(pageEl);
+				workspace.appendChild(container);
+				terapkanZoom();
+			}
+			
+			// Fungsi pembantu untuk membuat kotak pratinjau visual
+			function buatBoxVisualCalc(w_mm, h_mm, shape, number, bgColor, borderColor) {
+				let box = document.createElement('div');
+				box.style.width = `${w_mm * PX_PER_MM}px`;
+				box.style.height = `${h_mm * PX_PER_MM}px`;
+				box.style.background = bgColor;
+				box.style.border = `1px solid ${borderColor}`;
+				box.style.display = 'flex';
+				box.style.alignItems = 'center';
+				box.style.justifyContent = 'center';
+				box.style.fontSize = '20px';
+				box.style.color = borderColor;
+				box.style.fontWeight = 'bold';
+				box.style.boxSizing = 'border-box';
+				box.textContent = number;
+				
+				if (shape === 'circle') {
+					box.style.borderRadius = '50%';
+					} else {
+					box.style.borderRadius = '4px';
+				}
+				return box;
+			}
+			
+			function aksiTambah() {
+				if(!currentImgSrc) { alert('Silakan upload dan crop foto terlebih dahulu!'); return; }
+				let p = dapatkanPengaturan();
+				
+				let isRotate90 = false;
+				if (halamanAktif === 'pasfoto') {
+					const rotCheck = document.getElementById('rotate90Check');
+					if (rotCheck) isRotate90 = rotCheck.checked;
+				}
+				
+				let w_mm = p.w_mm;
+				let h_mm = p.h_mm;
+				
+				if (isRotate90) {
+					let tempImg = new Image();
+					tempImg.src = currentImgSrc;
+					tempImg.onload = function() {
+						const canvas = document.createElement('canvas');
+						canvas.width = tempImg.height;
+						canvas.height = tempImg.width;
+						const ctx = canvas.getContext('2d');
+						ctx.translate(canvas.width / 2, canvas.height / 2);
+						ctx.rotate(Math.PI / 2);
+						ctx.drawImage(tempImg, -tempImg.width / 2, -tempImg.height / 2);
+						
+						let rotatedSrc = canvas.toDataURL('image/jpeg', 1.0);
+						masukkanKeHalamanKertas(rotatedSrc, h_mm, w_mm, p.qty, false);
+					};
+					} else {
+					masukkanKeHalamanKertas(currentImgSrc, w_mm, h_mm, p.qty, false);
+				}
+			}
+			
+			function aksiOtomatis() {
+				if(!currentImgSrc) { alert('Silakan upload dan crop foto terlebih dahulu!'); return; }
+				let p = dapatkanPengaturan();
+				
+				let isRotate90 = false;
+				if (halamanAktif === 'pasfoto') {
+					const rotCheck = document.getElementById('rotate90Check');
+					if (rotCheck) isRotate90 = rotCheck.checked;
+				}
+				
+				let w_mm = p.w_mm;
+				let h_mm = p.h_mm;
+				
+				if (isRotate90) {
+					let tempImg = new Image();
+					tempImg.src = currentImgSrc;
+					tempImg.onload = function() {
+						const canvas = document.createElement('canvas');
+						canvas.width = tempImg.height;
+						canvas.height = tempImg.width;
+						const ctx = canvas.getContext('2d');
+						ctx.translate(canvas.width / 2, canvas.height / 2);
+						ctx.rotate(Math.PI / 2);
+						ctx.drawImage(tempImg, -tempImg.width / 2, -tempImg.height / 2);
+						
+						let rotatedSrc = canvas.toDataURL('image/jpeg', 1.0);
+						masukkanKeHalamanKertas(rotatedSrc, h_mm, w_mm, 999, true);
+					};
+					} else {
+					masukkanKeHalamanKertas(currentImgSrc, w_mm, h_mm, 999, true);
+				}
+			}
+			
+			function masukkanKeHalamanKertas(imgSrc, width_mm, height_mm, qty, autoFill) {
+				let targetWorkspaceId = getWorkspaceId(halamanAktif);
+				let workspace = document.getElementById(targetWorkspaceId);
+				if(!workspace) return;
+				
+				let p = dapatkanPengaturan();
+				const selectId = getSelectId(halamanAktif);
+				const sizeId = document.getElementById(selectId).value;
+				const paperDim = getPaperDimensions(halamanAktif, sizeId);
+				
+				const paperWPx = paperDim.w * PX_PER_MM;
+				const paperHPx = paperDim.h * PX_PER_MM;
+				const gapPx = p.gap * PX_PER_MM;
+				
+				let padPx = p.margin * PX_PER_MM;
+				if (p.mark && halamanAktif !== 'gridkertas') padPx += (p.gap / 2) * PX_PER_MM;
+				
+				const itemWPx = width_mm * PX_PER_MM;
+				const itemHPx = height_mm * PX_PER_MM;
+				
+				let pages = workspace.querySelectorAll('.paper-page');
+				
+				pages.forEach(pEl => {
+					pEl.style.padding = `${padPx}px`;
+					pEl.style.gap = `${gapPx}px`;
+					pEl.style.transform = 'none';
+				});
+				
+				let limit = autoFill ? 999 : qty;
+				let itemsAdded = 0;
+				let isNewPageCreatedForAutoFill = false;
+				
+				for(let i=0; i<limit; i++) {
+					let lastPage = pages[pages.length - 1];
+					let div = buatElemenFoto(imgSrc, `${itemWPx}px`, `${itemHPx}px`, p.stretch ? 'stretch-on' : 'stretch-off');
+					lastPage.appendChild(div);
+					
+					const isOverflowing = (lastPage.scrollHeight > lastPage.clientHeight + 2) || (lastPage.scrollWidth > lastPage.clientWidth + 2);
+					
+					if (isOverflowing) {
+						lastPage.removeChild(div);
+						
+						if (autoFill) {
+							if (itemsAdded === 0 && !isNewPageCreatedForAutoFill) {
+								lastPage = tambahHalamanKertas(targetWorkspaceId, paperWPx, paperHPx);
+								pages = workspace.querySelectorAll('.paper-page');
+								lastPage.style.padding = `${padPx}px`;
+								lastPage.style.gap = `${gapPx}px`;
+								lastPage.style.transform = 'none';
+								if (p.mark) lastPage.classList.add('show-marks');
+								
+								isNewPageCreatedForAutoFill = true;
+								i--; 
+								continue;
+								} else {
+								break;
+							}
+							} else {
+							lastPage = tambahHalamanKertas(targetWorkspaceId, paperWPx, paperHPx);
+							pages = workspace.querySelectorAll('.paper-page');
+							lastPage.style.padding = `${padPx}px`;
+							lastPage.style.gap = `${gapPx}px`;
+							lastPage.style.transform = 'none';
+							if (p.mark) lastPage.classList.add('show-marks');
+							
+							lastPage.appendChild(div);
+						}
+					}
+					itemsAdded++;
+				}
+				updateLayoutRealtime(); 
+			}
+			
+			function aksiRata(align) {
+				let targetWorkspaceId = getWorkspaceId(halamanAktif);
+				let pages = document.getElementById(targetWorkspaceId).querySelectorAll('.paper-page');
+				pages.forEach(p => p.style.justifyContent = align);
+				tutupSemuaMenu();
+			}
+			
+			window.addEventListener('resize', () => {
+				if(halamanAktif !== '') terapkanZoom();
+			});
+			
+			function toggleExportMenu(event, menuId) {
+				event.stopPropagation();
+				const menus = ['exportMenuPas', 'RataPas', 'exportMenuGrid', 'RataGrid', 'exportMenuCustom', 'RataCustom'];
+				menus.forEach(id => {
+					if(id === menuId) document.getElementById(id).classList.toggle('show');
+					else document.getElementById(id)?.classList.remove('show');
+				});
+			}
+			
+			/* PERBAIKAN FUNGSI EKSPOR PDF & JPEG */
+			async function aksiExport(tipe) {
+				let targetId = getWorkspaceId(halamanAktif);
+				let workspace = document.getElementById(targetId);
+				let pages = workspace.querySelectorAll('.paper-page');
+				if(pages.length === 0) return;
+				
+				tutupSemuaMenu();
+				
+				if (tipe === 'Print') {
+					const printWindow = window.open('', '_blank');
+					let pagesHtml = '';
+					pages.forEach((p) => {
+						pagesHtml += `<div class="paper-page ${p.classList.contains('show-marks')?'show-marks':''}" style="${p.style.cssText}; transform: none !important; position: relative !important; margin: 0 auto 20px auto; page-break-after: always; box-shadow: none;">${p.innerHTML}</div>`;
+					});
+					
+					printWindow.document.write(`
+					<html><head><title>Print Preview</title>
+					<style>
+					@page { margin: 0; } body { margin: 0; background: #fff; display: block; }
+					${document.querySelector('style').innerHTML}
+					.photo-actions { display: none !important; }
+					</style></head>
+					<body>
+					<div class="workspace" style="--mark-offset: ${workspace.style.getPropertyValue('--mark-offset')}">
+					${pagesHtml}
+					</div>
+					<script>setTimeout(() => { window.print(); window.close(); }, 500);<\/script>
+					</body></html>
+					`);
+					printWindow.document.close();
+					} else {
+					let pdf = null;
+					
+					// Atur skala: 3 untuk PDF (Super cepat & tajam 300 DPI), 4 untuk JPEG (Presisi tinggi)
+					const renderScale = (tipe === 'PDF') ? 3 : 4;
+					
+					for (let i = 0; i < pages.length; i++) {
+						const paperEl = pages[i];
+						const prevTransform = paperEl.style.transform;
+						paperEl.style.transform = 'none'; 
+						
+						paperEl.querySelectorAll('.photo-actions').forEach(el => el.style.display = 'none');
+						
+						const canvas = await html2canvas(paperEl, { 
+							scale: renderScale, 
+							useCORS: true,
+							backgroundColor: '#ffffff', // Memastikan background putih murni tanpa garis bercak
+							logging: false
+						});
+						
+						paperEl.querySelectorAll('.photo-actions').forEach(el => el.style.display = '');
+						paperEl.style.transform = prevTransform; 
+						
+						if (tipe === 'JPEG') {
+							// Ekspor ke JPEG via Blob untuk menghemat memori RAM & proses download mulus
+							await new Promise((resolve) => {
+								canvas.toBlob((blob) => {
+									const link = document.createElement('a');
+									link.download = `CetakFoto_Hal-${i+1}_${new Date().getTime()}.jpeg`;
+									link.href = URL.createObjectURL(blob);
+									link.click();
+									setTimeout(() => {
+										URL.revokeObjectURL(link.href);
+										resolve();
+									}, 300);
+								}, 'image/jpeg', 0.98); // Kualitas 98% (sangat tajam)
+							});
+							} else if (tipe === 'PDF') {
+							const imgData = canvas.toDataURL('image/jpeg', 0.95);
+							const isLandscape = canvas.width > canvas.height;
+							
+							if (i === 0) {
+								pdf = new window.jspdf.jsPDF({
+									orientation: isLandscape ? 'landscape' : 'portrait',
+									unit: 'px',
+									format: [canvas.width, canvas.height],
+									compress: true // Aktifkan kompresi internal agar proses cepat & ukuran file hemat
+								});
+								} else {
+								pdf.addPage([canvas.width, canvas.height], isLandscape ? 'landscape' : 'portrait');
+							}
+							
+							pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
+						}
+					}
+					
+					if (tipe === 'PDF' && pdf) {
+						pdf.save(`CetakFoto_${new Date().getTime()}.pdf`);
+					}
+				}
+			}
+			
+			function aksiResetForm(pageId) {
+				let targetWorkspace = getWorkspaceId(pageId);
+				let workspace = document.getElementById(targetWorkspace);
+				if (workspace) workspace.innerHTML = '';
+				
+				if(pageId === 'pasfoto') {
+					document.getElementById('paperSize').value = '3r';
+					document.getElementById('photoSize').value = '20x28';
+					document.getElementById('rotate90Check').checked = false;
+					document.getElementById('gapInput').value = '2';
+					document.getElementById('marginInput').value = '3';
+					document.getElementById('qtyInput').value = '1';
+					document.getElementById('showMarking').checked = false;
+					toggleCustomPaperInput('pasfoto');
+					renderUlangKertas('pasfoto', 'paperSize');
+					} else if(pageId === 'gridkertas') {
+					document.getElementById('gridPaperSize').value = 'a4';
+					document.getElementById('gridKolom').value = '1';
+					document.getElementById('gridBaris').value = '2';
+					document.getElementById('gridStretch').checked = false;
+					document.getElementById('gridGapInput').value = '6';
+					document.getElementById('gridMarginInput').value = '3';
+					document.getElementById('gridQtyInput').value = '1';
+					document.getElementById('gridShowMarking').checked = false;
+					toggleCustomPaperInput('gridkertas');
+					renderUlangKertas('gridkertas', 'gridPaperSize');
+					} else if(pageId === 'customfoto') {
+					document.getElementById('customPaperSize').value = '3r';
+					document.getElementById('customPanjang').value = '10';
+					document.getElementById('customLebar').value = '10';
+					document.getElementById('customStretch').checked = false;
+					document.getElementById('customGapInput').value = '2';
+					document.getElementById('customMarginInput').value = '3';
+					document.getElementById('customQtyInput').value = '1';
+					document.getElementById('customShowMarking').checked = false;
+					toggleCustomPaperInput('customfoto');
+					renderUlangKertas('customfoto', 'customPaperSize');
+				}
+				currentImgSrc = null;
+			}
+			
+			function tutupSemuaMenu() {
+				['exportMenuPas', 'RataPas', 'exportMenuGrid', 'RataGrid', 'exportMenuCustom', 'RataCustom'].forEach(id => {
+					document.getElementById(id)?.classList.remove('show');
+				});
+			}
+			
+			window.addEventListener('click', function() {
+				tutupSemuaMenu();
+			});
+		</script>
+	</body>
+</html>
