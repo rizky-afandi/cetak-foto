@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cetak-foto-pro-v2';
+const CACHE_NAME = 'cetak-foto-pro-v3';
 const urlsToCache = [
     './',
     './index.html',
