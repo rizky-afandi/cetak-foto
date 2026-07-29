@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hitung Gambar - Cetak Foto Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>    
+    <div id="hitunggambar" class="page">
+        <div class="page-header">
+            <h2>Simulasi & Hitung Jumlah Gambar</h2>
+            <a href="index.html" class="back-link" title="Kembali ke Menu">🏠</a>
+        </div>
+        <div class="main-content">
+            <div class="sidebar-form">
+                <div class="form-group">
+                    <label>Ukuran Kertas</label>
+                    <select id="calcPaperSize" onchange="toggleCustomPaperInput('hitunggambar'); hitungKapasitasOtomatis()">
+                        <option value="a4" selected>A4 (21 x 29.7 cm)</option>
+                        <option value="a5">A5 (14.8 x 21 cm)</option>
+                        <option value="a6">A6 (10.5 x 14.8 cm)</option>
+                        <option value="3r">3R (8.9 x 12.7 cm)</option>
+                        <option value="custom">Custom (Pilih Ukuran)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="groupCustomPaper_hitunggambar" style="display: none;">
+                    <label>Ukuran Custom (cm)</label>
+                    <input type="number" id="customPaperW_hitunggambar" value="21" min="1" step="0.1" placeholder="Lebar" oninput="hitungKapasitasOtomatis()">
+                    <span style="align-self: center;">x</span>
+                    <input type="number" id="customPaperH_hitunggambar" value="33" min="1" step="0.1" placeholder="Tinggi" oninput="hitungKapasitasOtomatis()">
+                </div>
+                <div class="form-group">
+                    <label>Lebar / P. (cm)</label>
+                    <input type="number" id="calcFotoW" value="3" min="0.1" step="0.1" style="flex: 1;" oninput="hitungKapasitasOtomatis()">
+                    <span style="align-self: center;">x</span>
+                    <input type="number" id="calcFotoH" value="3" min="0.1" step="0.1" style="flex: 1;" oninput="hitungKapasitasOtomatis()">
+                </div>
+                <div class="form-group">
+                    <label>Gap & Margin (mm)</label>
+                    <input type="number" id="calcGap" value="2" min="0" step="1" style="flex: 1;" oninput="hitungKapasitasOtomatis()">
+                    <span style="align-self: center;">&</span>
+                    <input type="number" id="calcMargin" value="10" min="0" step="1" style="flex: 1;" oninput="hitungKapasitasOtomatis()">
+                </div>
+                <div class="form-group">
+                    <label>Bentuk Gambar</label>
+                    <select id="calcShape" onchange="hitungKapasitasOtomatis()">
+                        <option value="square">Persegi (Kotak)</option>
+                        <option value="circle">Bulat (Lingkaran)</option>
+                    </select>
+                </div>
+                <div style="background:#E9D5FF; padding:15px; border-radius:8px; display:flex; gap:10px; align-items:center; margin-top:20px;">
+                    <span style="flex:1; font-weight:bold; color:#555; font-size:14px;">Estimasi Jumlah:</span>
+                    <div style="flex:1; text-align:right;">
+                        <b id="resultCount" style="font-size:20px; color:#198754; line-height:1.2; display:block;">0 Foto</b>
+                        <small id="resultDetail" style="color:#666; font-size:12px; display:block;">-</small>
+                    </div>
+                </div>
+            </div>
+            <div class="workspace-container">
+                <div class="paper-wrapper">
+                    <div id="workspaceCalc" class="workspace"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
