@@ -1,40 +1,186 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
 body { background: #FDF4FF; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; }
-header { flex-shrink: 0; background: #E9D5FF; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,.08); z-index: 10; position: relative; }
 
-/* Dashboard Menu */
+/* ==========================================================================
+   HEADER UTAMA & MENU TITIK TIGA (Unified / Disatukan)
+   ========================================================================== */
+header { 
+    flex-shrink: 0; 
+    background: #E9D5FF; 
+    padding: 10px 15px; 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 18px; 
+    font-weight: bold; 
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); 
+    z-index: 100; 
+    position: relative; 
+    color: #4a154b;
+}
+
+header.in-subpage {
+    background: #f3e8ff;
+    padding: 8px 15px;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+}
+
+.app-version {
+    font-size: 11px;
+    background: #d8b4fe;
+    padding: 2px 6px;
+    border-radius: 6px;
+    vertical-align: middle;
+    margin-left: 6px;
+    color: #581c87;
+}
+
+/* Container & Tombol Menu Titik Tiga */
+.header-menu-container {
+    position: relative;
+    display: inline-block;
+}
+
+.btn-dots-menu {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    color: #4a154b;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 50%;
+    transition: background 0.2s;
+    line-height: 1;
+}
+
+.btn-dots-menu:hover {
+    background: rgba(74, 21, 75, 0.1);
+}
+
+/* Dropdown Menu Melayang */
+.header-dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 120%;
+    background: #ffffff;
+    min-width: 170px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 1000;
+    border: 1px solid #e5e7eb;
+}
+
+.header-dropdown-menu.show {
+    display: block;
+}
+
+.header-dropdown-menu button {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+
+.header-dropdown-menu button:hover {
+    background: #f3f4f6;
+}
+
+.header-dropdown-menu button.text-danger {
+    color: #dc2626;
+    border-top: 1px solid #f3f4f6;
+}
+
+.header-dropdown-menu button.text-danger:hover {
+    background: #fee2e2;
+}
+
+/* Header Subpage Bar */
+.subpage-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-size: 14px;
+}
+
+.btn-exit-app {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    transition: background 0.2s;
+}
+.btn-exit-app:hover {
+    background: #bb2d3b;
+}
+
+/* ==========================================================================
+   DASHBOARD MENU & HALAMAN APLIKASI
+   ========================================================================== */
 .menu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; max-width: 800px; margin: 20px auto; width: 100%; }
-.menu a { text-decoration: none; color: inherit; display: block; }
 .menu button { width: 100%; border: none; background: white; border-radius: 12px; padding: 25px 15px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.08); transition: .2s; font-size: 16px; font-weight: bold; color: #333; }
 .menu button:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,.15); background: #fdfafb; }
 .icon { font-size: 40px; }
 
-/* Halaman Aplikasi */
 .page { display: flex; flex-direction: column; flex-grow: 1; margin: 10px; background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
 .page-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f4f6f9; padding-bottom: 10px; }
 .page-header h2 { font-size: 1.2rem; color: #333; }
-.back-link { font-size: 24px; cursor: pointer; transition: .2s; text-decoration: none; background: #f1f3f5; padding: 5px 10px; border-radius: 8px; }
-.back-link:hover { background: #e2e6ea; }
+.back-link { 
+    font-size: 20px; 
+    cursor: pointer; 
+    transition: .2s; 
+    text-decoration: none; 
+    background: #f1f3f5; 
+    padding: 6px 12px; 
+    border-radius: 8px; 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    color: #333;
+}
+.back-link:hover { 
+    background: #e2e6ea; 
+}
 
-/* Layout Form */
+/* Layout Form & Workspace */
 .main-content { display: flex; flex-direction: column; gap: 20px; width: 100%; flex-grow: 1; }
 .sidebar-form { width: 100%; background: #FDF4FF; padding: 10px 12px; border-radius: 8px; flex-shrink: 0; }
-.form-group { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; } /* Diubah agar lebih rapat */
+.form-group { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
 .form-group label { font-weight: bold; font-size: 12px; color: #555; flex: 1; min-width: 110px; }
-.form-group input[type="number"], .form-group select, .form-group .btn-action { padding: 5px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; flex: 1.5; width: 100%; height: 32px; } /* Tinggi input dipadatkan */
+.form-group input[type="number"], .form-group select, .form-group .btn-action { padding: 5px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; flex: 1.5; width: 100%; height: 32px; }
 .btn-action { background: #0d6efd; color: white; border: none; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
 
 .button-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd; }
-.btn-control { padding: 6px 4px; border: none; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: center; }
-.btn-add { background: #198754; color: white; } .btn-add:hover { background: #157347; }
-.btn-auto { background: #fd7e14; color: white; } .btn-auto:hover { background: #e06d10; }
-.btn-reset { background: #dc3545; color: white; } .btn-reset:hover { background: #bb2d3b; }
 
-/* Workspace & Kertas */
 .workspace-container { position: relative; width: 100%; background: #f0f2f5; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; align-items: flex-start; flex-grow: 1; overflow: hidden; }
 .zoom-controls { display: flex; flex-direction: row; gap: 8px; z-index: 50; margin-bottom: 15px; width: 100%; justify-content: center; flex-wrap: wrap; }
-.btn-zoom { background: white; border: 1px solid #ccc; color: #333; font-size: 14px; border-radius: 6px; cursor: pointer; padding: 8px 16px; box-shadow: 0 2px 5px rgba(0,0,0,.1); transition: 0.2s;}
-.btn-zoom:hover { background: #f1f3f5; }
 .paper-wrapper { display: flex; align-items: flex-start; justify-content: center; width: 100%; height: 55vh; overflow: auto; padding-bottom: 10px; }
 .workspace { display: flex; flex-direction: column; gap: 20px; align-items: center; width: auto; }
 .page-container { position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2); background: white; margin-bottom: 10px; }
@@ -50,42 +196,196 @@ header { flex-shrink: 0; background: #E9D5FF; padding: 15px; text-align: center;
 .photo-item:hover .photo-actions { display: flex; } 
 .photo-action-btn { background: rgba(255, 255, 255, 0.95); border: 1px solid #ddd; width: clamp(26px, 22cqi, 40px); aspect-ratio: 1; height: auto; border-radius: 50%; font-size: clamp(12px, 10cqi, 18px); cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
 
-/* Marking Lines Siku (Pas & Custom) */
-.crop-mark { position: absolute; border: 0.5px solid #888888; z-index: 10; width: 2mm; height: 2mm; margin: -0.25px; pointer-events: none; }
-.paper-page:not(.show-marks) .crop-mark { display: none; }
-.mark-tl { top: var(--mark-offset); left: var(--mark-offset); border-width: 1px 0 0 1px; }
-.mark-tr { top: var(--mark-offset); right: var(--mark-offset); border-width: 1px 1px 0 0; }
-.mark-bl { bottom: var(--mark-offset); left: var(--mark-offset); border-width: 0 0 1px 1px; }
-.mark-br { bottom: var(--mark-offset); right: var(--mark-offset); border-width: 0 1px 1px 0; }
-
-/* Marking Lines Lurus (Grid) */
-.grid-mark-overlay { position: absolute; background-color: #888; z-index: 50; pointer-events: none; }
-
 /* Dropdown Export */
 .export-container { position: relative; display: inline-block; }
 .btn-export { background: #198754; color: white; border: none; font-size: 14px; border-radius: 6px; cursor: pointer; padding: 8px 16px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,.1); display: flex; align-items: center; gap: 4px; }
 .btn-export:hover { background: #157347; }
+.btn-zoom2 { background: white; color: #333; border: none; font-size: 14px; border-radius: 6px; cursor: pointer; padding: 8px 16px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,.1); display: flex; align-items: center; gap: 4px; }
+
 .export-menu { display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: white; min-width: 120px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 6px; z-index: 100; margin-top: 5px; overflow: hidden; border: 1px solid #ddd; }
 .export-menu.show { display: block; }
 .export-item { background: none; border: none; width: 100%; padding: 10px 16px; text-align: left; font-size: 14px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: background 0.2s; }
 .export-item:hover { background: #f1f3f5; }
 
-/* Modal Crop */
-.crop-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-.crop-modal.active { display: flex; }
-.crop-container-box { width: 100%; max-width: 600px; height: 60vh; background: #fff; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-.crop-container-box img { max-width: 100%; max-height: 100%; display: block; }
-.crop-actions { display: flex; flex-wrap: nowrap; gap: 10px; margin-top: 15px; overflow-x: auto; }
+/* ==========================================================================
+   STYLING MODAL CROP (DEKSTOP / PC)
+   ========================================================================== */
+.crop-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 9999;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  box-sizing: border-box;
+  gap: 12px;
+}
 
-/* TAMPILAN PC / LAPTOP */
+.crop-modal.active {
+  display: flex;
+}
+
+.crop-container-box {
+  flex: 1;
+  width: 100%;
+  max-width: 800px;
+  max-height: calc(100vh - 200px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #111;
+}
+
+.crop-container-box img {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+
+.crop-controls-panel {
+  width: 100%;
+  max-width: 550px;
+  background: rgba(28, 28, 30, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  padding: 8px 12px !important;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
+  margin: 0 !important; 
+}
+
+.crop-controls-panel .control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px !important;
+  margin-bottom: 4px;
+}
+
+.crop-controls-panel label {
+  font-size: 11px !important;
+  width: 55px !important;
+  color: #ccc;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.crop-controls-panel input[type="range"] {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.crop-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 550px;
+}
+
+.btn-control {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  white-space: nowrap;
+}
+
+.btn-control:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-control:active {
+  transform: translateY(0);
+}
+
+.btn-rotate { background-color: #374151; color: #ffffff; }
+.btn-reset-image { background-color: #f59e0b; color: #ffffff; }
+.btn-add { background-color: #2563eb; color: #ffffff; }
+.btn-reset { background-color: #dc2626; color: #ffffff; }
+
+/* ==========================================================================
+   RESPONSIF DEKSTOP & MOBILE
+   ========================================================================== */
 @media (min-width: 768px) {
-  .menu { grid-template-columns: repeat(4, 1fr); max-width: 1000px; }
-  .page { margin: 20px; height: calc(100vh - 100px); }
+  .menu { grid-template-columns: repeat(3, 1fr); max-width: 1000px; }
+  .page { margin: 20px; height: calc(100vh - 50px); }
   .main-content { flex-direction: row; height: 100%; overflow: hidden; }
   .sidebar-form { width: 350px; height: 100%; overflow-y: auto; }
   .workspace-container { flex-direction: row; height: 100%; padding: 20px; }
-  .zoom-controls { flex-direction: column; width: auto; margin-right: 20px; justify-content: flex-start; margin-bottom: 0; }
-  .btn-zoom { padding: 10px; width: 100%; text-align: center; justify-content: center; }
-  .export-menu { top: 0; left: 100%; transform: translateX(8px); margin-top: 0; }
+  .zoom-controls { overflow: visible; z-index: 100; flex-direction: column; width: auto; margin-right: 20px; justify-content: flex-start; margin-bottom: 0; }
+  .btn-zoom { padding: 8px 16px; width: 100%; text-align: center; justify-content: center; background: white; border: 1px solid #ccc; color: #333; font-size: 14px; border-radius: 6px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,.1); transition: 0.2s; }
+
   .paper-wrapper { height: 100%; flex-grow: 1; max-height: none; }
+}
+
+@media screen and (max-width: 600px) {
+.crop-modal {
+    padding: 10px;
+    justify-content: center !important;
+    gap: 20px; 
+  }
+
+.crop-container-box {
+    flex: none !important;
+    width: 100%;
+    max-height: 45vh !important;
+    margin-bottom: 0 !important;
+  }
+
+.crop-controls-panel {
+    max-height: none !important;
+    padding: 8px 10px !important;
+    width: 100%;
+    margin: 0 !important; 
+  }
+  
+  .crop-actions {
+    gap: 6px; /* Jarak antar-tombol kiri ke kanan di HP */
+    margin-top: 0 !important;
+    width: 100%;
+  }
+
+  .crop-controls-panel .control-group {
+    margin-bottom: 13px;
+  }
+
+  .crop-controls-panel label {
+    font-size: 10px !important;
+    width: 45px !important;
+  }
+
+  #rotateValue {
+    font-size: 10px !important;
+  }
+
+  .btn-control {
+    padding: 8px 0;
+    font-size: 16px;
+  }
+
+  .btn-control .btn-text {
+    display: none;
+  }
 }
