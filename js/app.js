@@ -1,8 +1,93 @@
-// Konfigurasi PWA Service Worker (Jika digunakan)
+// Registrasi Service Worker secara Global di app.js
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Gagal', err));
+        navigator.serviceWorker.register('./sw.js')
+        .then((registration) => {
+            console.log('ServiceWorker berhasil terdaftar dengan scope: ', registration.scope);
+        })
+        .catch((error) => {
+            console.log('ServiceWorker gagal terdaftar: ', error);
+        });
     });
+}
+
+function muatHalaman(fileHtml) {
+    fetch(fileHtml)
+    .then(response => {
+        if (!response.ok) throw new Error("Gagal memuat halaman");
+        return response.text();
+    })
+    .then(html => {
+        const mainMenu = document.getElementById('main-menu');
+        const header = document.getElementById('header');
+        
+        if (mainMenu) mainMenu.style.display = 'none';
+        if (header) header.style.display = 'none';
+        
+        document.getElementById('app-container').innerHTML = html;
+        
+        if (fileHtml === 'pasfoto.html') {
+            halamanAktif = 'pasfoto';
+            } else if (fileHtml === 'grid.html') {
+            halamanAktif = 'gridkertas';
+            } else if (fileHtml === 'custom.html') {
+            halamanAktif = 'customfoto';
+            } else if (fileHtml === 'hitung.html') {
+            halamanAktif = 'hitunggambar';
+            } else if (fileHtml === 'polaroid.html') {
+            halamanAktif = 'polaroid';
+        }
+        
+        // Pastikan modal crop tersembunyi
+        tutupCropModal();
+        
+        setTimeout(() => {
+            toggleCustomPaperInput(halamanAktif);
+            if (halamanAktif === 'hitunggambar') {
+                if (typeof hitungKapasitasOtomatis === 'function') hitungKapasitasOtomatis();
+                } else {
+                renderUlangKertas(halamanAktif, getSelectId(halamanAktif));
+            }
+        }, 50);
+        
+        // Bind ulang tombol uploader
+        document.querySelectorAll('.uploader-btn').forEach(btn => {
+            btn.replaceWith(btn.cloneNode(true));
+        });
+        document.querySelectorAll('.uploader-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                targetRecropElement = null;
+                fileInput.click();
+            });
+        });
+    })
+    .catch(err => alert("Terjadi kesalahan saat memuat halaman."));
+}
+
+// Fungsi Navigasi Kembali ke Menu Utama (Tombol Home)
+function kembaliKeMenu() {
+    halamanAktif = '';
+    
+    // 1. Kosongkan area workspace/halaman
+    const appContainer = document.getElementById('app-container');
+    if (appContainer) appContainer.innerHTML = '';
+    
+    // 2. Tampilkan kembali Main Menu
+    const mainMenu = document.getElementById('main-menu');
+    if (mainMenu) mainMenu.style.display = 'grid';
+    
+    // 3. Pastikan Header Tetap Tampil Sejajar (Flex)
+    const header = document.getElementById('header');
+    if (header) {
+        header.style.display = 'flex'; // Dipastikan flex, bukan block/none
+        header.classList.remove('in-subpage');
+    }
+    
+    // 4. Tutup modal crop & menu titik tiga jika sedang terbuka
+    tutupCropModal();
+    if (typeof tutupHeaderMenu === 'function') {
+        tutupHeaderMenu();
+    }
 }
 
 // Global Variables
@@ -19,10 +104,148 @@ fileInput.accept = 'image/*';
 fileInput.style.display = 'none';
 document.body.appendChild(fileInput);
 
+let lastZoomRatio = 1;
+let defaultZoomRatio = 1;
+
+// Helper Reset Filter Slider
+function resetFilterSliders() {
+    const zoomSlider = document.getElementById('cropZoomSlider');
+    const rotateSlider = document.getElementById('cropRotateSlider');
+    const bSlider = document.getElementById('cropBrightness');
+    const cSlider = document.getElementById('cropContrast');
+    const sSlider = document.getElementById('cropSaturate');
+    const rotVal = document.getElementById('rotateValue');
+
+    // Kembalikan slider Zoom ke skala awal foto (bukan dipaksa ke angka 1)
+    if (zoomSlider) zoomSlider.value = defaultZoomRatio;
+    
+    if (rotateSlider) rotateSlider.value = 0;
+    if (bSlider) bSlider.value = 100;
+    if (cSlider) cSlider.value = 100;
+    if (sSlider) sSlider.value = 100;
+    if (rotVal) rotVal.textContent = '0°';
+    lastZoomRatio = defaultZoomRatio;
+
+    // Reset filter visual pada gambar
+    const cropImgEl = document.getElementById('cropImage');
+    if (cropImgEl) cropImgEl.style.filter = 'none';
+
+    const cropperContainer = document.querySelector('.cropper-container');
+    if (cropperContainer) cropperContainer.style.filter = 'none';
+}
+
+function resetEditGambar() {
+    // 1. Reset posisi crop, rotasi, dan zoom bawaan Cropper.js
+    if (cropper) {
+        cropper.reset();
+    }
+    
+    // 2. Reset semua nilai slider dan filter visual
+    resetFilterSliders();
+}
+
+// PERBAIKAN UTAMA: Terapkan Filter ke Seluruh Container Cropper
+function terapkanFilterModal() {
+    const b = document.getElementById('cropBrightness')?.value || 100;
+    const c = document.getElementById('cropContrast')?.value || 100;
+    const s = document.getElementById('cropSaturate')?.value || 100;
+    
+    const filterString = `brightness(${b}%) contrast(${c}%) saturate(${s}%)`;
+    
+    // 1. Terapkan filter ke elemen gambar asli
+    const cropImgEl = document.getElementById('cropImage');
+    if (cropImgEl) cropImgEl.style.filter = filterString;
+    
+    // 2. Terapkan filter ke container utama Cropper (Dijamin merubah pratinjau di HP & PC)
+    const cropperContainer = document.querySelector('.cropper-container');
+    if (cropperContainer) {
+        cropperContainer.style.filter = filterString;
+    }
+}
+
+// Kontrol Zoom & Rotasi
+function aturZoomModal(nilai) {
+    if (!cropper) return;
+    const targetZoom = parseFloat(nilai);
+    cropper.zoomTo(targetZoom);
+}
+
+function aturRotasiModal(nilai) {
+    if (!cropper) return;
+    const deg = parseInt(nilai);
+    const rotVal = document.getElementById('rotateValue');
+    if (rotVal) rotVal.textContent = `${deg}°`;
+    cropper.rotateTo(deg);
+}
+
+function putarCepat(deg) {
+    if (!cropper) return;
+    cropper.rotate(deg);
+    const slider = document.getElementById('cropRotateSlider');
+    if (slider) {
+        let newDeg = (parseInt(slider.value) + deg) % 360;
+        slider.value = newDeg;
+        const rotVal = document.getElementById('rotateValue');
+        if (rotVal) rotVal.textContent = `${newDeg}°`;
+    }
+}
+
+// Helper Sembunyikan Modal Crop
+function tutupCropModal() {
+    const cropModal = document.getElementById('cropModal');
+    if (cropModal) {
+        cropModal.classList.remove('active');
+        cropModal.style.display = 'none';
+    }
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+    resetFilterSliders();
+}
+
+// Buka Modal Crop & Pasang Event Listener Slider
+function bukaCropModal() {
+    const cropModal = document.getElementById('cropModal');
+    if (cropModal) {
+        cropModal.classList.add('active');
+        cropModal.style.display = 'flex';
+    }
+}
+
+// PERBAIKAN UTAMA: Event Delegation Global untuk Slider (Responsif di Layar Sentuh HP)
+document.addEventListener('input', (e) => {
+    const target = e.target;
+    if (!target || target.tagName !== 'INPUT' || target.type !== 'range') return;
+    
+    if (target.id === 'cropZoomSlider') {
+        aturZoomModal(target.value);
+        } else if (target.id === 'cropRotateSlider') {
+        aturRotasiModal(target.value);
+        } else if (target.id === 'cropBrightness' || target.id === 'cropContrast' || target.id === 'cropSaturate') {
+        terapkanFilterModal();
+    }
+});
+
+document.addEventListener('change', (e) => {
+    const target = e.target;
+    if (!target || target.tagName !== 'INPUT' || target.type !== 'range') return;
+    
+    if (target.id === 'cropZoomSlider') {
+        aturZoomModal(target.value);
+        } else if (target.id === 'cropRotateSlider') {
+        aturRotasiModal(target.value);
+        } else if (target.id === 'cropBrightness' || target.id === 'cropContrast' || target.id === 'cropSaturate') {
+        terapkanFilterModal();
+    }
+});
+
 // INIT HALAMAN
 document.addEventListener("DOMContentLoaded", () => {
+    tutupCropModal();
+    
     const pageContainer = document.querySelector('.page');
-    if (!pageContainer) return; // Jika di index.html, hentikan.
+    if (!pageContainer) return;
     
     halamanAktif = pageContainer.id;
     
@@ -30,12 +253,11 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleCustomPaperInput(halamanAktif);
         if (halamanAktif === 'hitunggambar') {
             hitungKapasitasOtomatis();
-        } else {
+            } else {
             renderUlangKertas(halamanAktif, getSelectId(halamanAktif));
         }
     }, 150);
-
-    // Bind Upload Buttons
+    
     document.querySelectorAll('.uploader-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             targetRecropElement = null;
@@ -44,63 +266,143 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// UPLOAD & CROP
+// UPLOAD & CROP (Versi Stabil & Bebas Error untuk HP)
 fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
-    if(!file) return;
+    if (!file) return;
     
-    // Gunakan ObjectURL untuk hemat RAM
-    const imgURL = URL.createObjectURL(file);
+    // 1. Ambil elemen gambar modal terlebih dahulu
     const cropImgEl = document.getElementById('cropImage');
+    if (!cropImgEl) return;
     
-    cropImgEl.src = imgURL;
-    document.getElementById('cropModal').classList.add('active');
+    // 2. Bersihkan memori Blob URL lama jika ada (Aman dari ReferenceError)
+    if (cropImgEl.src && cropImgEl.src.startsWith('blob:')) {
+        URL.revokeObjectURL(cropImgEl.src);
+    }
     
+    // 3. Hancurkan instance Cropper lama jika masih menggantung
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+    
+    // 4. Reset nilai slider ke kondisi awal (100% / 0°)
+    resetFilterSliders();
+    
+    // 5. Buat URL objek baru untuk gambar yang dipilih
+    const imgURL = URL.createObjectURL(file);
+    
+    // 6. PAUTKAN HANDLER ONLOAD TERLEBIH DAHULU (Penting untuk HP!)
     cropImgEl.onload = () => {
-        if (cropper) cropper.destroy();
+        // Tampilkan Modal setelah gambar siap di-load
+        bukaCropModal();
         
-        let p = dapatkanPengaturan();
-        let cropperRatio = NaN;
-        if (!p.stretch && p.w_mm > 0 && p.h_mm > 0) {
-            cropperRatio = p.w_mm / p.h_mm;
+        // Jeda kecil (100ms) agar DOM modal benar-benar dirender oleh HP
+        setTimeout(() => {
+            let p = dapatkanPengaturan();
+            let cropperRatio = NaN;
+            if (!p.stretch && p.w_mm > 0 && p.h_mm > 0) {
+                cropperRatio = p.w_mm / p.h_mm;
+            }
+            
+            // Inisialisasi Cropper.js secara aman
+            cropper = new Cropper(cropImgEl, {
+    viewMode: 0,
+    dragMode: 'move',
+    autoCropArea: 1,
+    aspectRatio: cropperRatio,
+    responsive: true,
+    restore: false,
+    checkOrientation: false,
+    zoomOnWheel: true,
+    toggleDragModeOnDblclick: false,
+    
+    ready() {
+        terapkanFilterModal();
+        
+        // 1. Ambil data dimensi gambar asli
+        const imageData = cropper.getImageData();
+        if (imageData && imageData.naturalWidth > 0) {
+            // 2. Hitung skala rasio asli saat pertama kali foto dimuat
+            const initialRatio = imageData.width / imageData.naturalWidth;
+            
+            // SIMPAN KE VARIABEL GLOBAL: Agar tombol Reset tahu posisi awal sebenarnya
+            defaultZoomRatio = initialRatio;
+            
+            const zoomSlider = document.getElementById('cropZoomSlider');
+            if (zoomSlider) {
+                const minZoom = initialRatio * 0.3;
+                const maxZoom = initialRatio * 3.0;
+                
+                zoomSlider.min = minZoom;
+                zoomSlider.max = maxZoom;
+                zoomSlider.step = (maxZoom - minZoom) / 100;
+                zoomSlider.value = initialRatio; // Setel slider sama persis dengan skala awal
+            }
         }
-        
-        cropper = new Cropper(cropImgEl, {
-            viewMode: 1,
-            autoCropArea: 1,
-            aspectRatio: cropperRatio,
-            responsive: true,
-            restore: false
-        });
+    },
+    
+    zoom(e) {
+        const zoomSlider = document.getElementById('cropZoomSlider');
+        if (zoomSlider && e.detail && e.detail.ratio && e.detail.originalEvent) {
+            zoomSlider.value = e.detail.ratio;
+        }
+    }
+});
+            
+        }, 100);
     };
+    
+    // 7. SETEL SRC GAMBAR (Memicu event onload di atas)
+    cropImgEl.src = imgURL;
+    
+    // 8. Reset nilai input file agar foto yang sama bisa dipilih ulang jika perlu
     fileInput.value = ""; 
 });
 
 function terapkanCrop() {
     if(!cropper) return;
-    const canvas = cropper.getCroppedCanvas({ imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
-    if (!canvas) return;
     
-    const newSrc = canvas.toDataURL('image/jpeg', 1.0); // Resolusi tinggi
+    // 1. Ambil canvas potongan dasar dari Cropper
+    const initialCanvas = cropper.getCroppedCanvas({ 
+        imageSmoothingEnabled: true, 
+        imageSmoothingQuality: 'high' 
+    });
+    if (!initialCanvas) return;
+    
+    // 2. Buat Canvas baru untuk mengaplikasikan filter warna
+    const filteredCanvas = document.createElement('canvas');
+    filteredCanvas.width = initialCanvas.width;
+    filteredCanvas.height = initialCanvas.height;
+    const ctx = filteredCanvas.getContext('2d');
+    
+    // 3. Ambil nilai dari slider
+    const b = document.getElementById('cropBrightness')?.value || 100;
+    const c = document.getElementById('cropContrast')?.value || 100;
+    const s = document.getElementById('cropSaturate')?.value || 100;
+    
+    // 4. Terapkan filter ke Canvas 2D
+    ctx.filter = `brightness(${b}%) contrast(${c}%) saturate(${s}%)`;
+    ctx.drawImage(initialCanvas, 0, 0);
+    
+    // 5. Ekspor gambar hasil olahan
+    const newSrc = filteredCanvas.toDataURL('image/jpeg', 1.0);
     
     if (targetRecropElement) {
         let imgEl = targetRecropElement.querySelector('img');
         if(imgEl) imgEl.src = newSrc;
         targetRecropElement = null;
         updateLayoutRealtime();
-    } else {
+        } else {
         currentImgSrc = newSrc;
     }
     
-    cropper.destroy();
-    cropper = null;
-    document.getElementById('cropModal').classList.remove('active');
+    tutupCropModal();
 }
 
 function batalCrop() {
     targetRecropElement = null;
-    if(cropper) { cropper.destroy(); cropper = null; }
-    document.getElementById('cropModal').classList.remove('active');
+    tutupCropModal();
 }
 
 // UTILS & PENGATURAN
@@ -109,6 +411,7 @@ function getWorkspaceId(pageId) {
     if(pageId === 'gridkertas') return 'workspaceGrid';
     if(pageId === 'customfoto') return 'workspaceCustom';
     if(pageId === 'hitunggambar') return 'workspaceCalc';
+    if(pageId === 'polaroid') return 'workspacePolaroid';
     return '';
 }
 
@@ -117,6 +420,7 @@ function getSelectId(pageId) {
     if(pageId === 'gridkertas') return 'gridPaperSize';
     if(pageId === 'customfoto') return 'customPaperSize';
     if(pageId === 'hitunggambar') return 'calcPaperSize';
+    if(pageId === 'polaroid') return 'polaroidPaperSize';
     return '';
 }
 
@@ -147,7 +451,7 @@ function dapatkanPengaturan() {
         p.margin = parseFloat(document.getElementById('marginInput').value) || 0;
         p.qty = parseInt(document.getElementById('qtyInput').value) || 1;
         p.mark = document.getElementById('showMarking').checked;
-    } else if(halamanAktif === 'gridkertas') {
+        } else if(halamanAktif === 'gridkertas') {
         const sizeId = document.getElementById('gridPaperSize').value;
         const paperDim = getPaperDimensions('gridkertas', sizeId);
         const cols = parseInt(document.getElementById('gridKolom').value) || 1;
@@ -159,7 +463,7 @@ function dapatkanPengaturan() {
         p.h_mm = (paperDim.h - (2 * p.margin) - ((rows - 1) * p.gap)) / rows;
         p.mark = document.getElementById('gridShowMarking').checked;
         p.stretch = document.getElementById('gridStretch').checked;
-    } else if(halamanAktif === 'customfoto') {
+        } else if(halamanAktif === 'customfoto') {
         p.w_mm = (parseFloat(document.getElementById('customLebar').value) || 0) * 10;
         p.h_mm = (parseFloat(document.getElementById('customPanjang').value) || 0) * 10;
         p.gap = parseFloat(document.getElementById('customGapInput').value) || 0;
@@ -167,17 +471,23 @@ function dapatkanPengaturan() {
         p.qty = parseInt(document.getElementById('customQtyInput').value) || 1;
         p.mark = document.getElementById('customShowMarking').checked;
         p.stretch = document.getElementById('customStretch').checked;
+        } else if(halamanAktif === 'polaroid') {
+        p.w_mm = 70; p.h_mm = 90;
+        p.gap = parseFloat(document.getElementById('polaroidGapInput')?.value) || 2;
+        p.margin = parseFloat(document.getElementById('polaroidMarginInput')?.value) || 3;
+        p.qty = parseInt(document.getElementById('polaroidQtyInput')?.value) || 1;
+        p.mark = document.getElementById('polaroidShowMarking')?.checked || false;
     }
     return p;
 }
 
-// ZOOM
+// ZOOM WORKSPACE
 function ubahZoom(d) { manualZoom = Math.max(0.3, Math.min(4, manualZoom + d)); terapkanZoom(); }
 function resetZoom() { manualZoom = 1; terapkanZoom(); }
 function terapkanZoom() {
     let workspace = document.getElementById(getWorkspaceId(halamanAktif));
     if (!workspace) return;
-    const wrapper = workspace.closest('.workspace-container').querySelector('.paper-wrapper');
+    const wrapper = workspace.closest('.workspace-container')?.querySelector('.paper-wrapper') || workspace.parentElement;
     const containers = workspace.querySelectorAll('.page-container');
     if (containers.length === 0) return;
     
@@ -211,7 +521,7 @@ function renderUlangKertas(pageId, selectId) {
     });
     
     workspace.innerHTML = ''; 
-    const paperDim = getPaperDimensions(pageId, document.getElementById(selectId).value);
+    const paperDim = getPaperDimensions(pageId, document.getElementById(selectId)?.value || 'a4');
     tambahHalamanKertas(getWorkspaceId(pageId), paperDim.w * PX_PER_MM, paperDim.h * PX_PER_MM);
     
     if (existingImages.length > 0) susunUlangGambar(existingImages, getWorkspaceId(pageId), pageId);
@@ -221,7 +531,6 @@ function renderUlangKertas(pageId, selectId) {
 function reflowHalaman() {
     if (!halamanAktif || halamanAktif === 'hitunggambar') return;
     
-    // Sinkronkan gap input khusus grid
     if (halamanAktif === 'gridkertas') {
         const marginInput = document.getElementById('gridMarginInput');
         const gapInput = document.getElementById('gridGapInput');
@@ -239,7 +548,8 @@ function reflowHalaman() {
     });
     
     workspace.innerHTML = ''; 
-    const paperDim = getPaperDimensions(halamanAktif, document.getElementById(getSelectId(halamanAktif)).value);
+    const selEl = document.getElementById(getSelectId(halamanAktif));
+    const paperDim = getPaperDimensions(halamanAktif, selEl ? selEl.value : 'a4');
     tambahHalamanKertas(getWorkspaceId(halamanAktif), paperDim.w * PX_PER_MM, paperDim.h * PX_PER_MM);
     
     if (existingImages.length > 0) susunUlangGambar(existingImages, getWorkspaceId(halamanAktif), halamanAktif);
@@ -288,7 +598,8 @@ function getDragAfterElement(container, y) {
 function susunUlangGambar(images, targetWorkspaceId, pageId) {
     let workspace = document.getElementById(targetWorkspaceId);
     let p = dapatkanPengaturan();
-    const paperDim = getPaperDimensions(pageId, document.getElementById(getSelectId(pageId)).value);
+    const selEl = document.getElementById(getSelectId(pageId));
+    const paperDim = getPaperDimensions(pageId, selEl ? selEl.value : 'a4');
     
     let padPx = p.margin * PX_PER_MM;
     if (p.mark && pageId !== 'gridkertas') padPx += (p.gap / 2) * PX_PER_MM;
@@ -352,11 +663,22 @@ function buatElemenFoto(imgSrc, widthPx, heightPx, imgClassName) {
     }));
     actionsDiv.appendChild(createBtn('✂️', 'Crop Ulang', () => {
         targetRecropElement = div;
-        document.getElementById('cropImage').src = img.src;
-        document.getElementById('cropModal').classList.add('active');
+        const cropImg = document.getElementById('cropImage');
+        if(cropImg) cropImg.src = img.src;
+        
+        bukaCropModal();
+        
         let p = dapatkanPengaturan();
         if(cropper) cropper.destroy();
-        cropper = new Cropper(document.getElementById('cropImage'), { viewMode: 1, autoCropArea: 1, aspectRatio: (!p.stretch ? (p.w_mm / p.h_mm) : NaN) });
+        
+        resetFilterSliders();
+        
+        cropper = new Cropper(document.getElementById('cropImage'), { 
+            viewMode: 1, 
+            dragMode: 'move',
+            autoCropArea: 1, 
+            aspectRatio: (!p.stretch ? (p.w_mm / p.h_mm) : NaN) 
+        });
     }));
     
     div.appendChild(actionsDiv);
@@ -368,7 +690,7 @@ function buatElemenFoto(imgSrc, widthPx, heightPx, imgClassName) {
     return div;
 }
 
-// UPDATE LAYOUT & MARKING (GARIS SIKU L DAN GARIS LURUS GRID)
+// UPDATE LAYOUT & MARKING
 function updateLayoutRealtime() {
     if(!halamanAktif || halamanAktif === 'hitunggambar') return;
     
@@ -379,7 +701,7 @@ function updateLayoutRealtime() {
     let padPx = p.margin * PX_PER_MM;
     if (p.mark && halamanAktif !== 'gridkertas') padPx += (p.gap / 2) * PX_PER_MM;
     
-    workspace.style.setProperty('--mark-offset', `-${(p.gap / 2) * PX_PER_MM}px`); // Kompensasi Garis Siku
+    workspace.style.setProperty('--mark-offset', `-${(p.gap / 2) * PX_PER_MM}px`);
     
     if (halamanAktif === 'gridkertas') {
         workspace.querySelectorAll('.photo-item').forEach(item => {
@@ -391,14 +713,11 @@ function updateLayoutRealtime() {
         page.style.padding = `${padPx}px`;
         page.style.gap = `${p.gap * PX_PER_MM}px`;
         
-        // Mode Siku L
         if (p.mark && halamanAktif !== 'gridkertas') page.classList.add('show-marks');
         else page.classList.remove('show-marks');
         
-        // Bersihkan Garis Grid Lama
         page.querySelectorAll('.grid-mark-overlay').forEach(el => el.remove());
         
-        // Mode Garis Lurus (Hanya Grid)
         if (halamanAktif === 'gridkertas' && p.mark) {
             let items = page.querySelectorAll('.photo-item');
             if (items.length > 0) {
@@ -410,7 +729,6 @@ function updateLayoutRealtime() {
                 let gridHeight = actualRows * itemHPx + (actualRows - 1) * gapPx;
                 let markLengthPx = 2 * PX_PER_MM;
                 
-                // Vertikal (Tengah antar kolom)
                 for (let c = 1; c < actualCols; c++) {
                     let x = padPx + c * itemWPx + (c - 0.5) * gapPx;
                     let mTop = document.createElement('div'); mTop.className = 'grid-mark-overlay';
@@ -419,7 +737,6 @@ function updateLayoutRealtime() {
                     mBot.style.cssText = `width: 0.5px; height: 2mm; left: ${x}px; top: ${padPx + gridHeight - markLengthPx}px; transform: translateX(-50%);`;
                     page.appendChild(mTop); page.appendChild(mBot);
                 }
-                // Horizontal (Tengah antar baris)
                 for (let r = 1; r < actualRows; r++) {
                     let y = padPx + r * itemHPx + (r - 0.5) * gapPx;
                     let mLft = document.createElement('div'); mLft.className = 'grid-mark-overlay';
@@ -448,7 +765,7 @@ function aksiTambah() {
             ctx.drawImage(tempImg, -tempImg.width / 2, -tempImg.height / 2);
             masukkanKeHalamanKertas(canvas.toDataURL('image/jpeg', 1.0), p.h_mm, p.w_mm, p.qty, false);
         };
-    } else {
+        } else {
         masukkanKeHalamanKertas(currentImgSrc, p.w_mm, p.h_mm, p.qty, false);
     }
 }
@@ -466,7 +783,7 @@ function aksiOtomatis() {
             ctx.drawImage(tempImg, -tempImg.width / 2, -tempImg.height / 2);
             masukkanKeHalamanKertas(canvas.toDataURL('image/jpeg', 1.0), p.h_mm, p.w_mm, 999, true);
         };
-    } else {
+        } else {
         masukkanKeHalamanKertas(currentImgSrc, p.w_mm, p.h_mm, 999, true);
     }
 }
@@ -474,7 +791,8 @@ function aksiOtomatis() {
 function masukkanKeHalamanKertas(imgSrc, w_mm, h_mm, qty, autoFill) {
     let workspace = document.getElementById(getWorkspaceId(halamanAktif));
     let p = dapatkanPengaturan();
-    const paperDim = getPaperDimensions(halamanAktif, document.getElementById(getSelectId(halamanAktif)).value);
+    const selEl = document.getElementById(getSelectId(halamanAktif));
+    const paperDim = getPaperDimensions(halamanAktif, selEl ? selEl.value : 'a4');
     
     let padPx = p.margin * PX_PER_MM;
     if (p.mark && halamanAktif !== 'gridkertas') padPx += (p.gap / 2) * PX_PER_MM;
@@ -497,7 +815,7 @@ function masukkanKeHalamanKertas(imgSrc, w_mm, h_mm, qty, autoFill) {
                     pages = workspace.querySelectorAll('.paper-page');
                     newPageForAutoFill = true; i--; continue;
                 } else break;
-            } else {
+                } else {
                 lastPage = tambahHalamanKertas(getWorkspaceId(halamanAktif), paperDim.w * PX_PER_MM, paperDim.h * PX_PER_MM);
                 pages = workspace.querySelectorAll('.paper-page');
                 lastPage.appendChild(div);
@@ -513,26 +831,39 @@ function aksiResetForm(pageId) {
     if (workspace) workspace.innerHTML = '';
     
     if(pageId === 'pasfoto') {
-        document.getElementById('paperSize').value = '3r'; document.getElementById('photoSize').value = '20x28';
-        document.getElementById('rotate90Check').checked = false; document.getElementById('gapInput').value = '2';
-        document.getElementById('marginInput').value = '3'; document.getElementById('qtyInput').value = '1'; document.getElementById('showMarking').checked = false;
-    } else if(pageId === 'gridkertas') {
-        document.getElementById('gridPaperSize').value = 'a4'; document.getElementById('gridKolom').value = '1';
-        document.getElementById('gridBaris').value = '2'; document.getElementById('gridStretch').checked = false;
-        document.getElementById('gridGapInput').value = '6'; document.getElementById('gridMarginInput').value = '3';
-        document.getElementById('gridQtyInput').value = '1'; document.getElementById('gridShowMarking').checked = false;
-    } else if(pageId === 'customfoto') {
-        document.getElementById('customPaperSize').value = '3r'; document.getElementById('customPanjang').value = '10';
-        document.getElementById('customLebar').value = '10'; document.getElementById('customStretch').checked = false;
-        document.getElementById('customGapInput').value = '2'; document.getElementById('customMarginInput').value = '3';
-        document.getElementById('customQtyInput').value = '1'; document.getElementById('customShowMarking').checked = false;
+        const el = document.getElementById('paperSize'); if(el) el.value = '3r';
+        const el2 = document.getElementById('photoSize'); if(el2) el2.value = '20x28';
+        const el3 = document.getElementById('rotate90Check'); if(el3) el3.checked = false;
+        const el4 = document.getElementById('gapInput'); if(el4) el4.value = '2';
+        const el5 = document.getElementById('marginInput'); if(el5) el5.value = '3';
+        const el6 = document.getElementById('qtyInput'); if(el6) el6.value = '1';
+        const el7 = document.getElementById('showMarking'); if(el7) el7.checked = false;
+        } else if(pageId === 'gridkertas') {
+        const el = document.getElementById('gridPaperSize'); if(el) el.value = 'a4';
+        const el2 = document.getElementById('gridKolom'); if(el2) el2.value = '1';
+        const el3 = document.getElementById('gridBaris'); if(el3) el3.value = '2';
+        const el4 = document.getElementById('gridStretch'); if(el4) el4.checked = false;
+        const el5 = document.getElementById('gridGapInput'); if(el5) el5.value = '6';
+        const el6 = document.getElementById('gridMarginInput'); if(el6) el6.value = '3';
+        const el7 = document.getElementById('gridQtyInput'); if(el7) el7.value = '1';
+        const el8 = document.getElementById('gridShowMarking'); if(el8) el8.checked = false;
+        } else if(pageId === 'customfoto') {
+        const el = document.getElementById('customPaperSize'); if(el) el.value = '3r';
+        const el2 = document.getElementById('customPanjang'); if(el2) el2.value = '10';
+        const el3 = document.getElementById('customLebar'); if(el3) el3.value = '10';
+        const el4 = document.getElementById('customStretch'); if(el4) el4.checked = false;
+        const el5 = document.getElementById('customGapInput'); if(el5) el5.value = '2';
+        const el6 = document.getElementById('customMarginInput'); if(el6) el6.value = '3';
+        const el7 = document.getElementById('customQtyInput'); if(el7) el7.value = '1';
+        const el8 = document.getElementById('customShowMarking'); if(el8) el8.checked = false;
     }
     toggleCustomPaperInput(pageId); renderUlangKertas(pageId, getSelectId(pageId));
     currentImgSrc = null;
 }
 
 function aksiRata(align) {
-    document.getElementById(getWorkspaceId(halamanAktif)).querySelectorAll('.paper-page').forEach(p => p.style.justifyContent = align);
+    let workspace = document.getElementById(getWorkspaceId(halamanAktif));
+    if(workspace) workspace.querySelectorAll('.paper-page').forEach(p => p.style.justifyContent = align);
     tutupSemuaMenu();
 }
 
@@ -540,7 +871,7 @@ function aksiRata(align) {
 function toggleExportMenu(event, menuId) {
     event.stopPropagation();
     ['exportMenuPas', 'RataPas', 'exportMenuGrid', 'RataGrid', 'exportMenuCustom', 'RataCustom'].forEach(id => {
-        if(id === menuId) document.getElementById(id).classList.toggle('show');
+        if(id === menuId) document.getElementById(id)?.classList.toggle('show');
         else document.getElementById(id)?.classList.remove('show');
     });
 }
@@ -552,8 +883,9 @@ window.addEventListener('click', tutupSemuaMenu);
 
 async function aksiExport(tipe) {
     let workspace = document.getElementById(getWorkspaceId(halamanAktif));
+    if(!workspace) return;
     let pages = workspace.querySelectorAll('.paper-page');
-    if(pages.length === 0) return;
+    if (pages.length === 0) return;
     tutupSemuaMenu();
     
     if (tipe === 'Print') {
@@ -562,9 +894,10 @@ async function aksiExport(tipe) {
         pages.forEach(p => pagesHtml += `<div class="paper-page ${p.classList.contains('show-marks')?'show-marks':''}" style="${p.style.cssText}; transform: none !important; position: relative !important; margin: 0 auto 20px auto; page-break-after: always; box-shadow: none;">${p.innerHTML}</div>`);
         printWindow.document.write(`<html><head><title>Print Preview</title><style>@page { margin: 0; } body { margin: 0; background: #fff; } ${document.querySelector('style')?.innerHTML || ''} .photo-actions { display: none !important; }</style></head><body><div class="workspace" style="--mark-offset: ${workspace.style.getPropertyValue('--mark-offset')}">${pagesHtml}</div><script>setTimeout(() => { window.print(); window.close(); }, 500);<\/script></body></html>`);
         printWindow.document.close();
-    } else {
+        } else {
         let pdf = null;
-        const renderScale = 5; // HIGH QUALITY
+        const renderScale = 3; 
+        
         for (let i = 0; i < pages.length; i++) {
             const paperEl = pages[i];
             const prevTransform = paperEl.style.transform;
@@ -579,37 +912,57 @@ async function aksiExport(tipe) {
             if (tipe === 'JPEG') {
                 await new Promise(resolve => {
                     canvas.toBlob(blob => {
-                        const link = document.createElement('a'); link.download = `CetakFoto_Hal-${i+1}.jpeg`;
-                        link.href = URL.createObjectURL(blob); link.click(); setTimeout(() => { URL.revokeObjectURL(link.href); resolve(); }, 300);
-                    }, 'image/jpeg', 1.0);
+                        const link = document.createElement('a');
+                        link.download = `CetakFoto_Hal-${i+1}.jpeg`;
+                        const objectUrl = URL.createObjectURL(blob);
+                        link.href = objectUrl;
+                        document.body.appendChild(link);
+                        link.click();
+                        
+                        setTimeout(() => {
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(objectUrl);
+                            resolve();
+                        }, 300);
+                    }, 'image/jpeg', 0.95);
                 });
-            } else if (tipe === 'PDF') {
-                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                } else if (tipe === 'PDF') {
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
                 const isLandscape = canvas.width > canvas.height;
-                if (i === 0) pdf = new window.jspdf.jsPDF({ orientation: isLandscape ? 'l' : 'p', unit: 'px', format: [canvas.width, canvas.height], compress: true });
-                else pdf.addPage([canvas.width, canvas.height], isLandscape ? 'l' : 'p');
+                
+                const { jsPDF } = window.jspdf;
+                if (i === 0) {
+                    pdf = new jsPDF({ orientation: isLandscape ? 'l' : 'p', unit: 'px', format: [canvas.width, canvas.height], compress: true });
+                    } else {
+                    pdf.addPage([canvas.width, canvas.height], isLandscape ? 'l' : 'p');
+                }
                 pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
             }
         }
-        if (tipe === 'PDF' && pdf) pdf.save(`CetakFoto_${new Date().getTime()}.pdf`);
+        
+        if (tipe === 'PDF' && pdf) {
+            pdf.save(`CetakFoto_${new Date().getTime()}.pdf`);
+        }
     }
 }
 
 // FUNGSI HITUNG GAMBAR (Hybrid Layout)
 function hitungKapasitasOtomatis() {
     if (halamanAktif !== 'hitunggambar') return;
-    const paperDim = getPaperDimensions('hitunggambar', document.getElementById('calcPaperSize').value);
-    const fotoW = (parseFloat(document.getElementById('calcFotoW').value) || 0) * 10;
-    const fotoH = (parseFloat(document.getElementById('calcFotoH').value) || 0) * 10;
-    const gap = parseFloat(document.getElementById('calcGap').value) || 0;
-    const margin = parseFloat(document.getElementById('calcMargin').value) || 0;
-    const shape = document.getElementById('calcShape').value;
+    const paperDim = getPaperDimensions('hitunggambar', document.getElementById('calcPaperSize')?.value || 'a4');
+    const fotoW = (parseFloat(document.getElementById('calcFotoW')?.value) || 0) * 10;
+    const fotoH = (parseFloat(document.getElementById('calcFotoH')?.value) || 0) * 10;
+    const gap = parseFloat(document.getElementById('calcGap')?.value) || 0;
+    const margin = parseFloat(document.getElementById('calcMargin')?.value) || 0;
+    const shape = document.getElementById('calcShape')?.value || 'rect';
     
-    if (fotoW <= 0 || fotoH <= 0) { document.getElementById('resultCount').textContent = "0 Foto"; return; }
+    const rCount = document.getElementById('resultCount');
+    const rDetail = document.getElementById('resultDetail');
+    
+    if (fotoW <= 0 || fotoH <= 0) { if(rCount) rCount.textContent = "0 Foto"; return; }
     const effW = paperDim.w - (2 * margin), effH = paperDim.h - (2 * margin);
-    if (effW <= 0 || effH <= 0) { document.getElementById('resultCount').textContent = "0 Foto"; return; }
+    if (effW <= 0 || effH <= 0) { if(rCount) rCount.textContent = "0 Foto"; return; }
     
-    // Opsi A: Utama Normal
     const colsA = Math.floor((effW + gap) / (fotoW + gap)), rowsA = Math.floor((effH + gap) / (fotoH + gap));
     const totalA_main = Math.max(0, colsA) * Math.max(0, rowsA);
     const sisaH_A = effH - (rowsA * fotoH + (rowsA > 0 ? (rowsA - 1) * gap : 0)) - (rowsA > 0 ? gap : 0);
@@ -617,23 +970,23 @@ function hitungKapasitasOtomatis() {
     if (sisaH_A >= fotoW && totalA_main > 0) { colsA_e = Math.floor((effW + gap)/(fotoH + gap)); rowsA_e = Math.floor((sisaH_A + gap)/(fotoW + gap)); totalA_extra = Math.max(0, colsA_e) * Math.max(0, rowsA_e); }
     const totalA = totalA_main + totalA_extra;
     
-    // Opsi B: Utama Diputar
     const colsB = Math.floor((effW + gap) / (fotoH + gap)), rowsB = Math.floor((effH + gap) / (fotoW + gap));
     const totalB_main = Math.max(0, colsB) * Math.max(0, rowsB);
     const sisaH_B = effH - (rowsB * fotoW + (rowsB > 0 ? (rowsB - 1) * gap : 0)) - (rowsB > 0 ? gap : 0);
     let totalB_extra = 0, colsB_e = 0, rowsB_e = 0;
-    if (sisaH_B >= fotoH && totalB_main > 0) { colsB_e = Math.floor((effW + gap)/(fotoW + gap)); rowsB_e = Math.floor((sisaH_B + gap)/(fotoH + gap)); totalB_extra = Math.max(0, colsB_e) * Math.max(0, rowsB_e); }
+    if (sisaH_B >= fotoH && totalB_main > 0) { colsB_e = Math.floor((effW + gap)/(fotoW + gap)); rowsB_e = Math.floor((sisaH_B + gap)/(fotoW + gap)); totalB_extra = Math.max(0, colsB_e) * Math.max(0, rowsB_e); }
     const totalB = totalB_main + totalB_extra;
     
     let L = totalA >= totalB ? { t: totalA, mc: totalA_main, mw: fotoW, mh: fotoH, ec: totalA_extra, ew: fotoH, eh: fotoW } : { t: totalB, mc: totalB_main, mw: fotoH, mh: fotoW, ec: totalB_extra, ew: fotoW, eh: fotoH };
     
-    document.getElementById('resultCount').textContent = `${L.t} Foto`;
-    document.getElementById('resultDetail').textContent = L.ec > 0 ? `${L.mc} Foto Utama + ${L.ec} Sisa` : `${L.mc} Foto Terisi`;
+    if(rCount) rCount.textContent = `${L.t} Foto`;
+    if(rDetail) rDetail.textContent = L.ec > 0 ? `${L.mc} Foto Utama + ${L.ec} Sisa` : `${L.mc} Foto Terisi`;
     renderSimulasiVisualCalc(paperDim.w, paperDim.h, margin, gap, shape, L);
 }
 
 function renderSimulasiVisualCalc(pW, pH, margin, gap, shape, L) {
     const workspace = document.getElementById('workspaceCalc');
+    if(!workspace) return;
     workspace.innerHTML = '';
     let cont = document.createElement('div'); cont.className = 'page-container'; cont.dataset.w = pW * PX_PER_MM; cont.dataset.h = pH * PX_PER_MM;
     let page = document.createElement('div'); page.className = 'paper-page';
@@ -651,4 +1004,47 @@ function buatBoxVisualCalc(w, h, shape, num, bg, border) {
     let box = document.createElement('div'); box.style.width = `${w * PX_PER_MM}px`; box.style.height = `${h * PX_PER_MM}px`;
     box.style.background = bg; box.style.border = `1px solid ${border}`; box.style.display = 'flex'; box.style.alignItems = 'center'; box.style.justifyContent = 'center'; box.style.color = border; box.style.fontWeight = 'bold';
     box.textContent = num; box.style.borderRadius = (shape === 'circle') ? '50%' : '4px'; return box;
+}
+
+// Fungsi untuk Menghapus Cache PWA & Memuat Ulang Aplikasi
+// Fungsi yang Diperbarui: Menghapus Cache PWA & Reload dengan Aman
+async function hapusCacheAplikasi() {
+    // 1. Konfirmasi ke pengguna
+    const konfirmasi = confirm("Apakah kamu yakin ingin membersihkan cache? Aplikasi akan dimuat ulang untuk mengambil pembaruan.");
+    if (!konfirmasi) return;
+    
+    try {
+        // 2. Hapus semua Cache Storage secara aman
+        if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(
+                cacheNames.map(cacheName => {
+                    console.log('Menghapus cache:', cacheName);
+                    return caches.delete(cacheName);
+                })
+            );
+        }
+        
+        // 3. Unregister Service Worker secara aman
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (let registration of registrations) {
+                await registration.unregister();
+                console.log('Service Worker berhasil di-unregister');
+            }
+        }
+        
+        // 4. Beri tahu pengguna dan muat ulang halaman (dengan pemicu unik agar tidak diambil dari cache)
+        alert("Cache berhasil dibersihkan! Aplikasi akan dimuat ulang.");
+        
+        // Menggunakan Timestamp unik untuk memaksa browser mengambil file paling baru dari server
+        window.location.href = window.location.pathname + '?v=' + new Date().getTime();
+        
+        } catch (error) {
+        console.error("Detail Error Pembersihan Cache:", error);
+        
+        // Fallback: Jika terjadi kegagalan kecil, tetap paksa reload dari server
+        alert("Pembersihan cache selesai dengan beberapa catatan. Halaman akan dimuat ulang.");
+        window.location.href = window.location.pathname + '?v=' + new Date().getTime();
+    }
 }
