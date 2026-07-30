@@ -883,66 +883,92 @@ window.addEventListener('click', tutupSemuaMenu);
 
 async function aksiExport(tipe) {
     let workspace = document.getElementById(getWorkspaceId(halamanAktif));
-    if(!workspace) return;
+    if (!workspace) return;
     let pages = workspace.querySelectorAll('.paper-page');
     if (pages.length === 0) return;
-    tutupSemuaMenu();
     
+    tutupSemuaMenu();
+
     if (tipe === 'Print') {
         const printWindow = window.open('', '_blank');
         let pagesHtml = '';
         pages.forEach(p => pagesHtml += `<div class="paper-page ${p.classList.contains('show-marks')?'show-marks':''}" style="${p.style.cssText}; transform: none !important; position: relative !important; margin: 0 auto 20px auto; page-break-after: always; box-shadow: none;">${p.innerHTML}</div>`);
         printWindow.document.write(`<html><head><title>Print Preview</title><style>@page { margin: 0; } body { margin: 0; background: #fff; } ${document.querySelector('style')?.innerHTML || ''} .photo-actions { display: none !important; }</style></head><body><div class="workspace" style="--mark-offset: ${workspace.style.getPropertyValue('--mark-offset')}">${pagesHtml}</div><script>setTimeout(() => { window.print(); window.close(); }, 500);<\/script></body></html>`);
         printWindow.document.close();
-        } else {
-        let pdf = null;
-        const renderScale = 3; 
-        
+        return;
+    }
+
+    // Deteksi Layar HP vs PC untuk menyesuaikan skala render agar RAM HP tidak penuh
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const renderScale = isMobile ? 2 : 3; // Gunakan skala 2 di HP agar ringan dan stabil
+
+    let pdf = null;
+
+    try {
         for (let i = 0; i < pages.length; i++) {
             const paperEl = pages[i];
             const prevTransform = paperEl.style.transform;
+            
+            // Sembunyikan elemen tombol aksi sebelum memotret halaman
             paperEl.style.transform = 'none'; 
             paperEl.querySelectorAll('.photo-actions').forEach(el => el.style.display = 'none');
-            
-            const canvas = await html2canvas(paperEl, { scale: renderScale, useCORS: true, backgroundColor: '#ffffff', logging: false });
-            
+
+            // Render halaman ke Canvas
+            const canvas = await html2canvas(paperEl, { 
+                scale: renderScale, 
+                useCORS: true, 
+                backgroundColor: '#ffffff', 
+                logging: false 
+            });
+
+            // Kembalikan tampilan semula
             paperEl.querySelectorAll('.photo-actions').forEach(el => el.style.display = '');
-            paperEl.style.transform = prevTransform; 
-            
+            paperEl.style.transform = prevTransform;
+
             if (tipe === 'JPEG') {
-                await new Promise(resolve => {
-                    canvas.toBlob(blob => {
-                        const link = document.createElement('a');
-                        link.download = `CetakFoto_Hal-${i+1}.jpeg`;
-                        const objectUrl = URL.createObjectURL(blob);
-                        link.href = objectUrl;
-                        document.body.appendChild(link);
-                        link.click();
-                        
-                        setTimeout(() => {
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(objectUrl);
-                            resolve();
-                        }, 300);
-                    }, 'image/jpeg', 0.95);
-                });
-                } else if (tipe === 'PDF') {
+                // Ekspor JPEG yang aman untuk HP (tanpa mengunci UI thread)
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const link = document.createElement('a');
+                link.download = `CetakFoto_Hal-${i+1}.jpeg`;
+                link.href = imgData;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                // Jeda kecil antar halaman agar GPU HP sempat bernapas
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+            } else if (tipe === 'PDF') {
                 const imgData = canvas.toDataURL('image/jpeg', 0.95);
                 const isLandscape = canvas.width > canvas.height;
-                
                 const { jsPDF } = window.jspdf;
+
                 if (i === 0) {
-                    pdf = new jsPDF({ orientation: isLandscape ? 'l' : 'p', unit: 'px', format: [canvas.width, canvas.height], compress: true });
-                    } else {
+                    pdf = new jsPDF({ 
+                        orientation: isLandscape ? 'l' : 'p', 
+                        unit: 'px', 
+                        format: [canvas.width, canvas.height], 
+                        compress: true 
+                    });
+                } else {
                     pdf.addPage([canvas.width, canvas.height], isLandscape ? 'l' : 'p');
                 }
                 pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
             }
+
+            // Memicu pembersihan memori canvas internal
+            canvas.width = 0;
+            canvas.height = 0;
         }
-        
+
         if (tipe === 'PDF' && pdf) {
             pdf.save(`CetakFoto_${new Date().getTime()}.pdf`);
         }
+
+    } catch (error) {
+        console.error("Gagal melakukan ekspor:", error);
+        alert("Terjadi masalah saat melakukan ekspor. Silakan coba lagi.");
     }
 }
 
