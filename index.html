@@ -5,40 +5,81 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		
 		<link rel="manifest" href="manifest.json">
+		<link rel="stylesheet" href="css/style.css">
 		<meta name="theme-color" content="#2563eb">
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 		<meta name="apple-mobile-web-app-title" content="CetakFoto">
 		
-		<title>Menu - Cetak Foto Pro</title>
-		<meta name="theme-color" content="#E9D5FF">
-		<link rel="stylesheet" href="css/style.css">
+		<title>Cetak Foto Pro</title>
 		
+		<script src="js/html2canvas.min.js"></script>
+		<script src="js/jspdf.umd.min.js"></script>
+		<link rel="stylesheet" href="css/cropper.min.css" />
+		<script src="js/cropper.min.js"></script>
 	</head>
 	<body>
-		<header id="header">Studio Cetak Foto3</header>
+		<!-- Header dengan Menu Titik Tiga -->
+		<header id="header">
+			<div class="header-title">
+				<span>Studio Cetak Foto <small class="app-version">R1-2026.07.30</small></span>
+			</div>
+			
+			<!-- Komponen Menu Titik Tiga -->
+			<div class="header-menu-container">
+				<button class="btn-dots-menu" onclick="toggleHeaderMenu(event)" title="Menu Opsi">⋮</button>
+				<div id="headerDropdown" class="header-dropdown-menu">
+					<button onclick="hapusCacheAplikasi(); tutupHeaderMenu();">
+						<span>🧹</span> Bersihkan Cache
+					</button>
+					<button onclick="tutupAplikasi(); tutupHeaderMenu();" class="text-danger">
+						<span>❌</span> Keluar
+					</button>
+				</div>
+			</div>
+		</header>
 		
-		<div class="menu">
-			<a href="pasfoto.html"><button><div class="icon">🖼️</div>Pas Foto</button></a>
-			<a href="grid.html"><button><div class="icon">🔲</div>Grid / Kertas</button></a>
-			<a href="custom.html"><button><div class="icon">✏️</div>Custom</button></a>
-			<a href="polaroid.html"><button><div class="icon">✏️</div>Polaroid</button></a>
-			<a href="hitung.html"><button><div class="icon">🧮</div>Hitung Gambar</button></a>
+		<!-- Menu Utama Dashboard -->
+		<div id="main-menu" class="menu">
+			<button onclick="muatHalaman('pasfoto.html')"><div class="icon">🖼️</div>Pas Foto</button>
+			<button onclick="muatHalaman('grid.html')"><div class="icon">🔲</div>Grid / Kertas</button>
+			<button onclick="muatHalaman('custom.html')"><div class="icon">✏️</div>Custom</button>
+			<button onclick="muatHalaman('polaroid.html')"><div class="icon">📷</div>Polaroid</button>
+			<button onclick="muatHalaman('hitung.html')"><div class="icon">🧮</div>Hitung Gambar</button>
 		</div>
 		
-		<script src="js/app.js"></script>
+		<div id="app-container"></div>
+		
 		<script>
-			if ('serviceWorker' in navigator) {
-				window.addEventListener('load', () => {
-					navigator.serviceWorker.register('./sw.js')
-					.then((registration) => {
-						console.log('ServiceWorker berhasil terdaftar dengan scope: ', registration.scope);
-					})
-					.catch((error) => {
-						console.log('ServiceWorker gagal terdaftar: ', error);
-					});
-				});
+			// Fungsi untuk membuka/tutup dropdown menu titik tiga
+			function toggleHeaderMenu(event) {
+				event.stopPropagation();
+				const menu = document.getElementById('headerDropdown');
+				if (menu) {
+					menu.classList.toggle('show');
+				}
+			}
+			
+			// Fungsi untuk menutup dropdown
+			function tutupHeaderMenu() {
+				const menu = document.getElementById('headerDropdown');
+				if (menu) {
+					menu.classList.remove('show');
+				}
+			}
+			
+			// Tutup dropdown jika mengklik area mana saja di luar menu
+			window.addEventListener('click', () => {
+				tutupHeaderMenu();
+			});
+			
+			// Fungsi Keluar Aplikasi
+			function tutupAplikasi() {
+				if (confirm("Apakah Anda yakin ingin keluar dari aplikasi?")) {
+					window.close();
+				}
 			}
 		</script>
+		<script src="js/app.js"></script>
 	</body>
 </html>

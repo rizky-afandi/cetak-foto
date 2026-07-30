@@ -1,126 +1,154 @@
-<!DOCTYPE html>
-<html lang="id">
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Pas Foto - Cetak Foto Pro</title>
-		<link rel="stylesheet" href="css/style.css">
-		
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-	</head>
-	<body>
-		<div id="pasfoto" class="page">
-			<div class="page-header">
-				<h2>Pas Foto Studio</h2>
-				<a href="index.html" class="back-link" title="Kembali ke Menu">🏠</a>
+<div id="pasfoto" class="page">
+	<div class="page-header">
+		<h2>Pas Foto Studio</h2>
+		<button onclick="kembaliKeMenu()" class="back-link" title="Kembali ke Menu">🏠</button>
+	</div>
+	<div class="main-content">
+		<div class="sidebar-form">
+			<div class="form-group">
+				<label>Ukuran Kertas</label>
+				<select id="paperSize" onchange="toggleCustomPaperInput('pasfoto'); renderUlangKertas('pasfoto', 'paperSize')">
+					<option value="a4">A4 (21 x 29.7 cm)</option>
+					<option value="a5">A5 (14.8 x 21 cm)</option>
+					<option value="a6">A6 (10.5 x 14.8 cm)</option>
+					<option value="3r" selected>3R (8.9 x 12.7 cm)</option>
+					<option value="4r">4R (10.2 x 15.2 cm)</option>
+					<option value="5r">5R (12.7 x 17.8 cm)</option>
+					<option value="6r">6R (15.2 x 20.3 cm)</option>
+					<option value="custom">Custom (Pilih Ukuran)</option>
+				</select>
 			</div>
-			<div class="main-content">
-				<div class="sidebar-form">
-					<div class="form-group">
-						<label>Ukuran Kertas</label>
-						<select id="paperSize" onchange="toggleCustomPaperInput('pasfoto'); renderUlangKertas('pasfoto', 'paperSize')">
-							<option value="a4">A4 (21 x 29.7 cm)</option>
-							<option value="a5">A5 (14.8 x 21 cm)</option>
-							<option value="a6">A6 (10.5 x 14.8 cm)</option>
-							<option value="3r" selected>3R (8.9 x 12.7 cm)</option>
-							<option value="4r">4R (10.2 x 15.2 cm)</option>
-							<option value="5r">5R (12.7 x 17.8 cm)</option>
-							<option value="6r">6R (15.2 x 20.3 cm)</option>
-							<option value="custom">Custom (Pilih Ukuran)</option>
-						</select>
-					</div>
-					<div class="form-group" id="groupCustomPaper_pasfoto" style="display: none;">
-						<label>Ukuran Custom (cm)</label>
-						<input type="number" id="customPaperW_pasfoto" value="20" min="1" step="0.1" placeholder="Lebar" oninput="renderUlangKertas('pasfoto', 'paperSize')">
-						<span style="align-self: center;">x</span>
-						<input type="number" id="customPaperH_pasfoto" value="30" min="1" step="0.1" placeholder="Tinggi" oninput="renderUlangKertas('pasfoto', 'paperSize')">
-					</div>
-					<div class="form-group">
-						<label>Ukuran Foto</label>
-						<select id="photoSize" style="flex: 1;">
-							<option value="20x28">2x3 cm</option>
-							<option value="28x38">3x4 cm</option>
-							<option value="38x56">4x6 cm</option>
-						</select>
-						<label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer; min-width: unset; flex: unset; font-size: 12px; font-weight: bold; color: #198754;" title="Putar 90 derajat">
-							<input type="checkbox" id="rotate90Check" style="width: 16px; height: 16px;"> Rotasi 90°
-						</label>
-					</div>
-					<div class="form-group">
-						<label>Jarak / Gap (mm)</label>
-						<input type="number" id="gapInput" value="2" min="0" oninput="reflowHalaman()">
-					</div>
-					<div class="form-group">
-						<label>Margin (mm)</label>
-						<input type="number" id="marginInput" value="3" min="0" oninput="reflowHalaman()">
-					</div>
-					<div class="form-group">
-						<label>QTY (Jumlah)</label>
-						<input type="number" id="qtyInput" value="1" min="1">
-					</div>
-					<div class="form-group">
-						<label>Pilih Gambar</label>
-						<button class="btn-action uploader-btn">📁 Upload Foto</button>
-					</div>
-					<div class="form-group">
-						<label></label> 
-						<div style="flex: 1.5; width: 100%;">
-							<label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: 100%;">
-								<input type="checkbox" id="showMarking" onchange="reflowHalaman()" style="width: 18px; height: 18px;">
-								<span style="font-weight: bold; color: #198754; font-size: 13px;">📐 Garis Potong</span>
-							</label>
-						</div>
-					</div>
-					<div class="button-group">
-						<button class="btn-control btn-add" onclick="aksiTambah()">➕ Tambah</button>
-						<button class="btn-control btn-auto" onclick="aksiOtomatis()">✨ Penuh</button>
-						<button class="btn-control btn-reset" onclick="aksiResetForm('pasfoto')">🧹 Reset</button>
+			<div class="form-group" id="groupCustomPaper_pasfoto" style="display: none;">
+				<label>Ukuran Custom (cm)</label>
+				<input type="number" id="customPaperW_pasfoto" value="20" min="1" step="0.1" placeholder="Lebar" oninput="renderUlangKertas('pasfoto', 'paperSize')">
+				<span style="align-self: center;">x</span>
+				<input type="number" id="customPaperH_pasfoto" value="30" min="1" step="0.1" placeholder="Tinggi" oninput="renderUlangKertas('pasfoto', 'paperSize')">
+			</div>
+			<div class="form-group">
+				<label>Ukuran Foto</label>
+				<select id="photoSize" style="flex: 1;">
+					<option value="20x28">2x3 cm</option>
+					<option value="28x38">3x4 cm</option>
+					<option value="38x56">4x6 cm</option>
+				</select>
+				<label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer; min-width: unset; flex: unset; font-size: 12px; font-weight: bold; color: #198754;" title="Putar 90 derajat">
+					<input type="checkbox" id="rotate90Check" style="width: 16px; height: 16px;"> Rotasi 90°
+				</label>
+			</div>
+			<div class="form-group">
+				<label>Jarak / Gap (mm)</label>
+				<input type="number" id="gapInput" value="2" min="0" oninput="reflowHalaman()">
+			</div>
+			<div class="form-group">
+				<label>Margin (mm)</label>
+				<input type="number" id="marginInput" value="3" min="0" oninput="reflowHalaman()">
+			</div>
+			<div class="form-group">
+				<label>QTY (Jumlah)</label>
+				<input type="number" id="qtyInput" value="1" min="1">
+			</div>
+			<div class="form-group">
+				<label>Pilih Gambar</label>
+				<button class="btn-action uploader-btn">📁 Upload Foto</button>
+			</div>
+			<div class="form-group">
+				<label></label> 
+				<div style="flex: 1.5; width: 100%;">
+					<label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: 100%;">
+						<input type="checkbox" id="showMarking" onchange="reflowHalaman()" style="width: 18px; height: 18px;">
+						<span style="font-weight: bold; color: #198754; font-size: 13px;">📐 Garis Potong</span>
+					</label>
+				</div>
+			</div>
+			<div class="button-group">
+				<button class="btn-control btn-add" onclick="aksiTambah()">➕ Tambah</button>
+				<button class="btn-control btn-auto" onclick="aksiOtomatis()">✨ Penuh</button>
+				<button class="btn-control btn-reset" onclick="aksiResetForm('pasfoto')">🧹 Reset</button>
+			</div>
+		</div>
+		<div class="workspace-container">
+			<div class="zoom-controls">
+				<button class="btn-zoom btn-zoom2" onclick="ubahZoom(0.1)">➕</button>
+				<button class="btn-zoom btn-zoom2" onclick="ubahZoom(-0.1)">➖</button>
+				<button class="btn-zoom btn-zoom2" onclick="resetZoom()">🔄</button>
+				<div class="export-container">
+					<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'RataPas')">☰</button>
+					<div id="RataPas" class="export-menu">
+						<button class="export-item" onclick="aksiRata('flex-start')">◀ Kiri</button>
+						<button class="export-item" onclick="aksiRata('center')">⬌ Tengah</button>
+						<button class="export-item" onclick="aksiRata('flex-end')">▶ Kanan</button>
 					</div>
 				</div>
-				<div class="workspace-container">
-					<div class="zoom-controls">
-						<button class="btn-zoom" onclick="ubahZoom(0.1)">➕</button>
-						<button class="btn-zoom" onclick="ubahZoom(-0.1)">➖</button>
-						<button class="btn-zoom" onclick="resetZoom()">🔄</button>
-						<div class="export-container">
-							<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'RataPas')">☰</button>
-							<div id="RataPas" class="export-menu">
-								<button class="export-item" onclick="aksiRata('flex-start')">◀ Kiri</button>
-								<button class="export-item" onclick="aksiRata('center')">⬌ Tengah</button>
-								<button class="export-item" onclick="aksiRata('flex-end')">▶ Kanan</button>
-							</div>
-						</div>
-						<div class="export-container">
-							<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'exportMenuPas')">📤</button>
-							<div id="exportMenuPas" class="export-menu">
-								<button class="export-item" onclick="aksiExport('JPEG')">🖼️ JPEG</button>
-								<button class="export-item" onclick="aksiExport('PDF')">📄 PDF</button>
-								<button class="export-item" onclick="aksiExport('Print')">🖨️ Print</button>
-							</div>
-						</div>
-					</div>
-					<div class="paper-wrapper">
-						<div id="workspacePas" class="workspace"></div>
+				<div class="export-container">
+					<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'exportMenuPas')">📤</button>
+					<div id="exportMenuPas" class="export-menu">
+						<button class="export-item" onclick="aksiExport('JPEG')">🖼️ JPEG</button>
+						<button class="export-item" onclick="aksiExport('PDF')">📄 PDF</button>
+						<button class="export-item" onclick="aksiExport('Print')">🖨️ Print</button>
 					</div>
 				</div>
 			</div>
-		</div>
-		
-		<div id="cropModal" class="crop-modal">
-			<div class="crop-container-box">
-				<img id="cropImage" src="">
-			</div>
-			<div class="crop-actions">
-				<button class="btn-control btn-zoom" style="padding: 10px 15px;" onclick="cropper.rotate(-90)">↺</button>
-				<button class="btn-control btn-zoom" style="padding: 10px 15px;" onclick="cropper.rotate(90)">↻</button>
-				<button class="btn-control btn-add" style="padding: 10px 20px;" onclick="terapkanCrop()">✂️ Crop</button>
-				<button class="btn-control btn-reset" style="padding: 10px 20px;" onclick="batalCrop()">❌ Batal</button>
+			<div class="paper-wrapper">
+				<div id="workspacePas" class="workspace"></div>
 			</div>
 		</div>
+	</div>
+</div>
+
+<div id="cropModal" class="crop-modal">
+	<div class="crop-container-box">
+		<img id="cropImage" src="">
+	</div>
+	
+	<!-- Panel Kontrol Editor Gambar -->
+	<div class="crop-controls-panel">
+		<!-- Slider Zoom -->
+		<div class="control-group">
+			<label>Zoom:</label>
+			<input type="range" id="cropZoomSlider" min="0.1" max="3" step="0.01" value="1">
+		</div>
+		<!-- Slider Rotasi -->
+		<div class="control-group">
+			<label>Rotasi:</label>
+			<input type="range" id="cropRotateSlider" min="-180" max="180" step="1" value="0">
+			<span id="rotateValue">0°</span>
+		</div>
 		
-		<script src="js/app.js"></script>
-	</body>
-</html>
+		<!-- Slider Kecerahan -->
+		<div class="control-group">
+			<label>Cahaya:</label>
+			<input type="range" id="cropBrightness" min="0" max="200" step="1" value="100">
+		</div>
+		
+		<!-- Slider Kontras -->
+		<div class="control-group">
+			<label>Kontras:</label>
+			<input type="range" id="cropContrast" min="0" max="200" step="1" value="100">
+		</div>
+		
+		<!-- Slider Saturasi -->
+		<div class="control-group">
+			<label>Saturasi:</label>
+			<input type="range" id="cropSaturate" min="0" max="200" step="1" value="100">
+		</div>
+	</div>
+	
+	<!-- Aksi Tombol (Tombol Reset Ditambahkan Sebelum Tombol Crop) -->
+	<div class="crop-actions">
+		<button class="btn-control btn-rotate" title="Putar Kiri" onclick="putarCepat(-90)">
+			<span class="btn-icon">↺</span> <span class="btn-text">Kiri</span>
+		</button>
+		<button class="btn-control btn-rotate" title="Putar Kanan" onclick="putarCepat(90)">
+			<span class="btn-icon">↻</span> <span class="btn-text">Kanan</span>
+		</button>
+		<button class="btn-control btn-reset-image" title="Reset Gambar" onclick="resetEditGambar()">
+			<span class="btn-icon">🔄</span> <span class="btn-text">Reset</span>
+		</button>
+		<button class="btn-control btn-add" title="Terapkan Crop" onclick="terapkanCrop()">
+			<span class="btn-icon">✅</span> <span class="btn-text">Crop</span>
+		</button>
+		<button class="btn-control btn-reset" title="Batal" onclick="batalCrop()">
+			<span class="btn-icon">❌</span> <span class="btn-text">Batal</span>
+		</button>
+	</div>
+</div>
