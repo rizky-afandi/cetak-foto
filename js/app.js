@@ -889,6 +889,7 @@ async function aksiExport(tipe) {
     
     tutupSemuaMenu();
 
+    // Mode Print
     if (tipe === 'Print') {
         const printWindow = window.open('', '_blank');
         let pagesHtml = '';
@@ -898,9 +899,9 @@ async function aksiExport(tipe) {
         return;
     }
 
-    // Deteksi Layar HP vs PC untuk menyesuaikan skala render agar RAM HP tidak penuh
+    // Deteksi HP vs PC
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const renderScale = isMobile ? 2 : 3; // Gunakan skala 2 di HP agar ringan dan stabil
+    const renderScale = isMobile ? 2 : 3; // Skala 2 di HP agar ringan dan tidak kehabisan RAM
 
     let pdf = null;
 
@@ -909,11 +910,11 @@ async function aksiExport(tipe) {
             const paperEl = pages[i];
             const prevTransform = paperEl.style.transform;
             
-            // Sembunyikan elemen tombol aksi sebelum memotret halaman
+            // Sembunyikan tombol aksi sementara
             paperEl.style.transform = 'none'; 
             paperEl.querySelectorAll('.photo-actions').forEach(el => el.style.display = 'none');
 
-            // Render halaman ke Canvas
+            // Render ke Canvas
             const canvas = await html2canvas(paperEl, { 
                 scale: renderScale, 
                 useCORS: true, 
@@ -926,18 +927,34 @@ async function aksiExport(tipe) {
             paperEl.style.transform = prevTransform;
 
             if (tipe === 'JPEG') {
-                // Ekspor JPEG yang aman untuk HP (tanpa mengunci UI thread)
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                const link = document.createElement('a');
-                link.download = `CetakFoto_Hal-${i+1}.jpeg`;
-                link.href = imgData;
-                
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                // Jeda kecil antar halaman agar GPU HP sempat bernapas
-                await new Promise(resolve => setTimeout(resolve, 300));
+                // Selesaikan proses download via Promise khusus HP
+                await new Promise((resolve) => {
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            resolve();
+                            return;
+                        }
+                        const objectUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.style.display = 'none';
+                        link.download = `CetakFoto_Hal-${i + 1}.jpg`;
+                        link.href = objectUrl;
+                        
+                        document.body.appendChild(link);
+                        
+                        // Eksekusi trigger click
+                        link.click();
+                        
+                        // Jeda waktu yang cukup lama (800ms) agar Browser HP selesai merespons pengunduhan
+                        setTimeout(() => {
+                            if (document.body.contains(link)) {
+                                document.body.removeChild(link);
+                            }
+                            URL.revokeObjectURL(objectUrl);
+                            resolve();
+                        }, 800);
+                    }, 'image/jpeg', 0.95);
+                });
 
             } else if (tipe === 'PDF') {
                 const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -957,7 +974,7 @@ async function aksiExport(tipe) {
                 pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
             }
 
-            // Memicu pembersihan memori canvas internal
+            // Bersihkan memori canvas secara eksplisit
             canvas.width = 0;
             canvas.height = 0;
         }
@@ -968,7 +985,7 @@ async function aksiExport(tipe) {
 
     } catch (error) {
         console.error("Gagal melakukan ekspor:", error);
-        alert("Terjadi masalah saat melakukan ekspor. Silakan coba lagi.");
+        alert("Terjadi kesalahan saat memproses ekspor gambar. Silakan coba lagi.");
     }
 }
 
