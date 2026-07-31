@@ -1,12 +1,13 @@
-const CACHE_NAME = 'cetak-foto-v2';
+const CACHE_NAME = 'cetak-foto-v4'; // Naikkan versi cache
 const urlsToCache = [
+  './',
   './index.html',
   './css/style.css',
-  './css/cropper.min.css',     // Ditambahkan untuk offline CSS Cropper
+  './css/cropper.min.css',
   './js/app.js',
-  './js/html2canvas.min.js',  // Ditambahkan untuk offline html2canvas
-  './js/jspdf.umd.min.js',   // Ditambahkan untuk offline jsPDF
-  './js/cropper.min.js',     // Ditambahkan untuk offline JS Cropper
+  './js/html2canvas.min.js',
+  './js/jspdf.umd.min.js',
+  './js/cropper.min.js',
   './192.png',
   './512.png'
 ];
@@ -22,11 +23,21 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// 2. Fetch Aset dari Cache saat Offline
+// 2. Fetch Aset (DIPERBAIKI: Abaikan Blob, Data-URL, dan non-GET request)
 self.addEventListener('fetch', (event) => {
+  const reqUrl = event.request.url;
+
+  // JANGAN cetat/intersepsi request internal ekspor gambar atau skema non-http
+  if (
+    reqUrl.startsWith('blob:') || 
+    reqUrl.startsWith('data:') || 
+    event.request.method !== 'GET'
+  ) {
+    return; // Serahkan langsung ke browser
+  }
+
   event.respondWith(
     caches.match(event.request).then((response) => {
-      // Kembalikan dari cache jika ada, jika tidak ambil dari jaringan
       return response || fetch(event.request);
     })
   );
