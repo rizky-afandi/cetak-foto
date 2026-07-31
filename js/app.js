@@ -433,11 +433,23 @@ function toggleCustomPaperInput(pageId) {
 }
 
 function getPaperDimensions(pageId, s) {
-    const sizes = {'3r':{w:89,h:127},'4r':{w:102,h:152},'5r':{w:127,h:178},'6r':{w:152,h:203},'a4':{w:210,h:297},'a5':{w:148,h:210},'a6':{w:105,h:148}};
+    const sizes = {
+        '3r': { w: 89, h: 127 },
+        '4r': { w: 102, h: 152 },
+        '5r': { w: 127, h: 178 },
+        '6r': { w: 152, h: 203 },
+        'a4': { w: 210, h: 297 },
+        'f4': { w: 215, h: 330 }, // Tambahkan ukuran F4/Folio (dalam mm)
+        'a5': { w: 148, h: 210 },
+        'a6': { w: 105, h: 148 }
+    };
     if (s === 'custom') {
         const wInput = document.getElementById(`customPaperW_${pageId}`);
         const hInput = document.getElementById(`customPaperH_${pageId}`);
-        return { w: (wInput ? parseFloat(wInput.value) * 10 : 200), h: (hInput ? parseFloat(hInput.value) * 10 : 300) };
+        return { 
+            w: (wInput ? parseFloat(wInput.value) * 10 : 200), 
+            h: (hInput ? parseFloat(hInput.value) * 10 : 300) 
+        };
     }
     return sizes[s] || sizes['a4'];
 }
@@ -839,7 +851,7 @@ function aksiResetForm(pageId) {
         const el6 = document.getElementById('qtyInput'); if(el6) el6.value = '1';
         const el7 = document.getElementById('showMarking'); if(el7) el7.checked = false;
         } else if(pageId === 'gridkertas') {
-        const el = document.getElementById('gridPaperSize'); if(el) el.value = 'a4';
+        const el = document.getElementById('gridPaperSize'); if(el) el.value = '3r';
         const el2 = document.getElementById('gridKolom'); if(el2) el2.value = '1';
         const el3 = document.getElementById('gridBaris'); if(el3) el3.value = '2';
         const el4 = document.getElementById('gridStretch'); if(el4) el4.checked = false;
@@ -892,13 +904,122 @@ async function aksiExport(tipe) {
     
     tutupSemuaMenu();
 
-    // Mode Print Preview Browser Native
+// Mode Print Langsung (Kompatibel dengan Chrome Android & PC)
     if (tipe === 'Print') {
-        const printWindow = window.open('', '_blank');
-        let pagesHtml = '';
-        pages.forEach(p => pagesHtml += `<div class="paper-page ${p.classList.contains('show-marks')?'show-marks':''}" style="${p.style.cssText}; transform: none !important; position: relative !important; margin: 0 auto 20px auto; page-break-after: always; box-shadow: none;">${p.innerHTML}</div>`);
-        printWindow.document.write(`<html><head><title>Print Preview</title><style>@page { margin: 0; } body { margin: 0; background: #fff; } ${document.querySelector('style')?.innerHTML || ''} .photo-actions { display: none !important; }</style></head><body><div class="workspace" style="--mark-offset: ${workspace.style.getPropertyValue('--mark-offset')}">${pagesHtml}</div><script>setTimeout(() => { window.print(); window.close(); }, 500);<\/script></body></html>`);
-        printWindow.document.close();
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            // CARA KHUSUS ANDROID: Gunakan Hidden Iframe (Mencegah Error "There was a problem printing...")
+            let printIframe = document.getElementById('hiddenPrintIframe');
+            if (!printIframe) {
+                printIframe = document.createElement('iframe');
+                printIframe.id = 'hiddenPrintIframe';
+                printIframe.style.position = 'fixed';
+                printIframe.style.right = '0';
+                printIframe.style.bottom = '0';
+                printIframe.style.width = '0';
+                printIframe.style.height = '0';
+                printIframe.style.border = '0';
+                document.body.appendChild(printIframe);
+            }
+
+            let pagesHtml = '';
+            pages.forEach(p => {
+                pagesHtml += `
+                    <div class="paper-page ${p.classList.contains('show-marks') ? 'show-marks' : ''}" 
+                         style="${p.style.cssText}; transform: none !important; position: relative !important; margin: 0 auto 10mm auto; page-break-after: always; box-shadow: none;">
+                        ${p.innerHTML}
+                    </div>`;
+            });
+
+            const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+            let stylesHtml = '';
+            styles.forEach(s => stylesHtml += s.outerHTML);
+
+            const iframeDoc = printIframe.contentWindow.document;
+            iframeDoc.open();
+            iframeDoc.write(`
+                <html>
+                <head>
+                    <title>Cetak Foto</title>
+                    ${stylesHtml}
+                    <style>
+                        @page { size: auto; margin: 0mm; }
+                        body { margin: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        .photo-actions { display: none !important; }
+                        .crop-mark { display: block !important; }
+                        .workspace { display: flex; flex-direction: column; align-items: center; padding: 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="workspace" style="--mark-offset: ${workspace.style.getPropertyValue('--mark-offset')}">
+                        ${pagesHtml}
+                    </div>
+                </body>
+                </html>
+            `);
+            iframeDoc.close();
+
+            // Beri jeda agar resource iframe selesai dimuat oleh Android
+            setTimeout(() => {
+                try {
+                    printIframe.contentWindow.focus();
+                    printIframe.contentWindow.print();
+                } catch (e) {
+                    alert("Gagal memanggil fungsi cetak bawaan HP. Coba gunakan fitur ekspor PDF.");
+                }
+            }, 600);
+
+        } else {
+            // CARA KHUSUS DESKTOP / PC
+            const printWindow = window.open('', '_blank', 'width=800,height=600');
+            if (!printWindow) {
+                alert("Pop-up diblokir! Harap izinkan pop-up untuk situs ini.");
+                return;
+            }
+
+            let pagesHtml = '';
+            pages.forEach(p => {
+                pagesHtml += `
+                    <div class="paper-page ${p.classList.contains('show-marks') ? 'show-marks' : ''}" 
+                         style="${p.style.cssText}; transform: none !important; position: relative !important; margin: 0 auto 10mm auto; page-break-after: always; box-shadow: none;">
+                        ${p.innerHTML}
+                    </div>`;
+            });
+
+            const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+            let stylesHtml = '';
+            styles.forEach(s => stylesHtml += s.outerHTML);
+
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Cetak Langsung</title>
+                    ${stylesHtml}
+                    <style>
+                        @page { size: auto; margin: 0mm; }
+                        body { margin: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        .photo-actions { display: none !important; }
+                    </style>
+                </head>
+                <body>
+                    <div class="workspace" style="--mark-offset: ${workspace.style.getPropertyValue('--mark-offset')}; padding: 0;">
+                        ${pagesHtml}
+                    </div>
+                    <script>
+                        window.onload = () => {
+                            setTimeout(() => {
+                                window.focus();
+                                window.print();
+                                setTimeout(() => { window.close(); }, 500);
+                            }, 500);
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
         return;
     }
 
@@ -1099,45 +1220,44 @@ function buatBoxVisualCalc(w, h, shape, num, bg, border) {
     box.textContent = num; box.style.borderRadius = (shape === 'circle') ? '50%' : '4px'; return box;
 }
 
-// Fungsi untuk Menghapus Cache PWA & Memuat Ulang Aplikasi
-// Fungsi yang Diperbarui: Menghapus Cache PWA & Reload dengan Aman
 async function hapusCacheAplikasi() {
-    // 1. Konfirmasi ke pengguna
-    const konfirmasi = confirm("Apakah kamu yakin ingin membersihkan cache? Aplikasi akan dimuat ulang untuk mengambil pembaruan.");
+    const konfirmasi = confirm("Apakah kamu yakin ingin membersihkan cache? Aplikasi akan dimuat ulang untuk mengambil pembaruan file terbaru dari server.");
     if (!konfirmasi) return;
-    
+
     try {
-        // 2. Hapus semua Cache Storage secara aman
+        // 1. Hapus semua Cache Storage PWA
         if ('caches' in window) {
             const cacheNames = await caches.keys();
             await Promise.all(
                 cacheNames.map(cacheName => {
-                    console.log('Menghapus cache:', cacheName);
+                    console.log('Menghapus cache storage:', cacheName);
                     return caches.delete(cacheName);
                 })
             );
         }
-        
-        // 3. Unregister Service Worker secara aman
+
+        // 2. Unregister / Copot Service Worker yang sedang berjalan
         if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
             for (let registration of registrations) {
                 await registration.unregister();
-                console.log('Service Worker berhasil di-unregister');
+                console.log('Service Worker berhasil dilepas.');
             }
         }
-        
-        // 4. Beri tahu pengguna dan muat ulang halaman (dengan pemicu unik agar tidak diambil dari cache)
-        alert("Cache berhasil dibersihkan! Aplikasi akan dimuat ulang.");
-        
-        // Menggunakan Timestamp unik untuk memaksa browser mengambil file paling baru dari server
-        window.location.href = window.location.pathname + '?v=' + new Date().getTime();
-        
-        } catch (error) {
-        console.error("Detail Error Pembersihan Cache:", error);
-        
-        // Fallback: Jika terjadi kegagalan kecil, tetap paksa reload dari server
-        alert("Pembersihan cache selesai dengan beberapa catatan. Halaman akan dimuat ulang.");
-        window.location.href = window.location.pathname + '?v=' + new Date().getTime();
+
+        // 3. Bersihkan memori penyimpan data lokal
+        localStorage.clear();
+        sessionStorage.clear();
+
+        alert("Cache berhasil dibersihkan! Seluruh file baru akan diambil dari server.");
+
+        // 4. Paksa browser reload LANGSUNG dari server (Bypass Cache dengan Timestamp)
+        const timestamp = new Date().getTime();
+        window.location.href = window.location.origin + window.location.pathname + '?v=' + timestamp;
+
+    } catch (error) {
+        console.error("Gagal membersihkan cache:", error);
+        alert("Terjadi kesalahan saat membersihkan cache. Memuat ulang halaman...");
+        window.location.reload(true);
     }
 }
