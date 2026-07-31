@@ -885,11 +885,14 @@ async function aksiExport(tipe) {
     let workspace = document.getElementById(getWorkspaceId(halamanAktif));
     if (!workspace) return;
     let pages = workspace.querySelectorAll('.paper-page');
-    if (pages.length === 0) return;
+    if (pages.length === 0) {
+        alert("Tidak ada halaman untuk diekspor!");
+        return;
+    }
     
     tutupSemuaMenu();
 
-    // Mode Print
+    // Mode Print Preview Browser Native
     if (tipe === 'Print') {
         const printWindow = window.open('', '_blank');
         let pagesHtml = '';
@@ -899,94 +902,141 @@ async function aksiExport(tipe) {
         return;
     }
 
-    // Deteksi HP vs PC
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const renderScale = isMobile ? 2 : 3; // Skala 2 di HP agar ringan dan tidak kehabisan RAM
+    // Scale 2 sudah setara 300 DPI di HP (sangat tajam untuk cetak) & hemat RAM HP
+    const renderScale = isMobile ? 2 : 3; 
 
-    let pdf = null;
+    // Deklarasi PDF lokal
+    let pdfDoc = null;
 
     try {
         for (let i = 0; i < pages.length; i++) {
             const paperEl = pages[i];
             const prevTransform = paperEl.style.transform;
             
-            // Sembunyikan tombol aksi sementara
+            // Sembunyikan tombol aksi melayang (kopi, hapus, putar)
             paperEl.style.transform = 'none'; 
             paperEl.querySelectorAll('.photo-actions').forEach(el => el.style.display = 'none');
 
             // Render ke Canvas
-            const canvas = await html2canvas(paperEl, { 
+            let canvas = await html2canvas(paperEl, { 
                 scale: renderScale, 
                 useCORS: true, 
                 backgroundColor: '#ffffff', 
                 logging: false 
             });
 
-            // Kembalikan tampilan semula
+            // Kembalikan Tampilan UI Halaman
             paperEl.querySelectorAll('.photo-actions').forEach(el => el.style.display = '');
             paperEl.style.transform = prevTransform;
 
             if (tipe === 'JPEG') {
-                // Selesaikan proses download via Promise khusus HP
-                await new Promise((resolve) => {
-                    canvas.toBlob((blob) => {
-                        if (!blob) {
-                            resolve();
-                            return;
-                        }
-                        const objectUrl = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.style.display = 'none';
-                        link.download = `CetakFoto_Hal-${i + 1}.jpg`;
-                        link.href = objectUrl;
-                        
-                        document.body.appendChild(link);
-                        
-                        // Eksekusi trigger click
-                        link.click();
-                        
-                        // Jeda waktu yang cukup lama (800ms) agar Browser HP selesai merespons pengunduhan
-                        setTimeout(() => {
-                            if (document.body.contains(link)) {
-                                document.body.removeChild(link);
-                            }
-                            URL.revokeObjectURL(objectUrl);
-                            resolve();
-                        }, 800);
-                    }, 'image/jpeg', 0.95);
-                });
+                const timeStamp = Date.now();
+                const fileName = `CetakFoto_Hal-${i + 1}_${timeStamp}.jpg`;
+
+                // Buat Blob Gambar
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+                if (!blob) continue;
+
+                // Model Web Share API untuk Android
+                const file = new File([blob], fileName, { type: 'image/jpeg' });
+                if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Simpan / Bagikan Gambar',
+                            text: `Cetak Foto Halaman ${i + 1}`
+                        });
+                    } catch (shareErr) {
+                        // Jika dibatalkan user, fallback ke download biasa
+                        unduhBlobOtomatis(blob, fileName);
+                    }
+                } else {
+                    unduhBlobOtomatis(blob, fileName);
+                }
+
+                if (pages.length > 1) {
+                    await new Promise(r => setTimeout(r, 400));
+                }
 
             } else if (tipe === 'PDF') {
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const imgData = canvas.toDataURL('image/jpeg', 0.90); // Gunakan kompresi 0.90 agar RAM aman
                 const isLandscape = canvas.width > canvas.height;
                 const { jsPDF } = window.jspdf;
 
                 if (i === 0) {
-                    pdf = new jsPDF({ 
+                    pdfDoc = new jsPDF({ 
                         orientation: isLandscape ? 'l' : 'p', 
                         unit: 'px', 
                         format: [canvas.width, canvas.height], 
                         compress: true 
                     });
                 } else {
-                    pdf.addPage([canvas.width, canvas.height], isLandscape ? 'l' : 'p');
+                    pdfDoc.addPage([canvas.width, canvas.height], isLandscape ? 'l' : 'p');
                 }
-                pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
+                
+                pdfDoc.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
             }
 
-            // Bersihkan memori canvas secara eksplisit
+            // BEBASKAN MEMORI CANVAS (Kunci Utama Agar Android Tidak Macet)
+            const ctx = canvas.getContext('2d');
+            if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
             canvas.width = 0;
             canvas.height = 0;
+            canvas = null;
         }
 
-        if (tipe === 'PDF' && pdf) {
-            pdf.save(`CetakFoto_${new Date().getTime()}.pdf`);
+        // EKSPOR DAN BERSIHKAN MEMORI PDF
+        if (tipe === 'PDF' && pdfDoc) {
+            const pdfBlob = pdfDoc.output('blob');
+            const fileName = `CetakFoto_${Date.now()}.pdf`;
+
+            // Coba Web Share API untuk PDF di Android
+            const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+            if (isMobile && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+                try {
+                    await navigator.share({
+                        files: [pdfFile],
+                        title: 'Simpan / Cetak PDF',
+                        text: 'File Siap Cetak'
+                    });
+                } catch (e) {
+                    unduhBlobOtomatis(pdfBlob, fileName);
+                }
+            } else {
+                unduhBlobOtomatis(pdfBlob, fileName);
+            }
+
+            // Hancurkan referensi PDF
+            pdfDoc = null;
         }
 
     } catch (error) {
         console.error("Gagal melakukan ekspor:", error);
-        alert("Terjadi kesalahan saat memproses ekspor gambar. Silakan coba lagi.");
+        alert("Terjadi kesalahan saat memproses ekspor. Silakan coba lagi.");
+    } finally {
+        // Jaminan UI tombol tindakan kembali normal
+        pages.forEach(paperEl => {
+            paperEl.querySelectorAll('.photo-actions').forEach(el => el.style.display = '');
+        });
     }
+}
+
+// Fungsi Helper Pengunduhan Blob yang Bersih
+function unduhBlobOtomatis(blob, fileName) {
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+
+    setTimeout(() => {
+        if (document.body.contains(link)) {
+            document.body.removeChild(link);
+        }
+        URL.revokeObjectURL(blobUrl);
+    }, 500);
 }
 
 // FUNGSI HITUNG GAMBAR (Hybrid Layout)
