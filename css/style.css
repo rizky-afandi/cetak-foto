@@ -173,9 +173,26 @@ header.in-subpage {
 .main-content { display: flex; flex-direction: column; gap: 20px; width: 100%; flex-grow: 1; }
 .sidebar-form { width: 100%; background: #FDF4FF; padding: 10px 12px; border-radius: 8px; flex-shrink: 0; }
 .form-group { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
-.form-group label { font-weight: bold; font-size: 12px; color: #555; flex: 1; min-width: 110px; }
+.form-group label { font-weight: bold; font-size: 12px; color: #555; flex: 1; min-width: 120px; }
 .form-group input[type="number"], .form-group select, .form-group .btn-action { padding: 5px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; flex: 1.5; width: 100%; height: 32px; }
 .btn-action { background: #0d6efd; color: white; border: none; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+
+.checkbox-wrapper{
+    flex: 1.5;
+}
+
+.checkbox-label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.checkbox-label input{
+    margin:0;
+}
 
 .button-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd; }
 
@@ -184,6 +201,7 @@ header.in-subpage {
 .paper-wrapper { display: flex; align-items: flex-start; justify-content: center; width: 100%; height: 55vh; overflow: auto; padding-bottom: 10px; }
 .workspace { display: flex; flex-direction: column; gap: 20px; align-items: center; width: auto; }
 .page-container { position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2); background: white; margin-bottom: 10px; }
+
 .paper-page { background: white; position: absolute; top: 0; left: 0; transform-origin: top left; display: flex; flex-wrap: wrap; align-content: flex-start; transition: padding 0.3s, gap 0.3s; }
 
 /* Item Foto & Tombol Aksi */
