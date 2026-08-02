@@ -1,5 +1,5 @@
 // NAIKKAN VERSI CACHE SETIAP KALI BAPAK MENGUBAH KODE / MENGEDIT HALAMAN HTML (misal dari v6 ke v7)
-const CACHE_NAME = 'cetak-foto-v7'; 
+const CACHE_NAME = 'cetak-foto-v8'; 
 
 // DAFTAR SEMUA FILE YANG DIPERLUKAN UNTUK OFFLINE (Termasuk file sub-halaman)
 const urlsToCache = [
