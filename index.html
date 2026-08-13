@@ -22,17 +22,13 @@
 		<!-- Header dengan Menu Titik Tiga -->
 		<header id="header">
 			<div class="header-title">
-				<span>Studio Cetak Foto<small class="app-version">R3-2026.08.02</small></span>
+				<span>Studio Cetak Foto<small class="app-version">R4-2026.08.13</small></span>
 			</div>
 			
 			<!-- Komponen Menu Titik Tiga -->
 			<div class="header-menu-container">
 				<button class="btn-dots-menu" onclick="toggleHeaderMenu(event)" title="Menu Opsi">⋮</button>
 				<div id="headerDropdown" class="header-dropdown-menu">
-					<!-- Tombol Install PWA Tambahan (Muncul Otomatis Saat Siap di-Install) -->
-					<button id="btnInstallPwa" onclick="installAplikasiPWA(); tutupHeaderMenu();" style="display: none; background-color: #2563eb; color: white;">
-						<span>📱</span> Install Aplikasi
-					</button>
 					<button onclick="hapusCacheAplikasi(); tutupHeaderMenu();">
 						<span>🧹</span> Bersihkan Cache
 					</button>
@@ -45,6 +41,7 @@
 		
 		<!-- Menu Utama Dashboard -->
 		<div id="main-menu" class="menu">
+			<button onclick="muatHalaman('printgambar.html')"><div class="icon">🎨</div>Print Gambar</button>
 			<button onclick="muatHalaman('pasfoto.html')"><div class="icon">🖼️</div>Pas Foto</button>
 			<button onclick="muatHalaman('grid.html')"><div class="icon">🔲</div>Grid / Kertas</button>
 			<button onclick="muatHalaman('custom.html')"><div class="icon">✏️</div>Custom</button>
@@ -55,35 +52,7 @@
 		<div id="app-container"></div>
 		
 		<script>
-			// Logika Penangan Prompt Install PWA
-			let deferredPrompt;
-			const btnInstall = document.getElementById('btnInstallPwa');
-
-			window.addEventListener('beforeinstallprompt', (e) => {
-				// Cegah banner otomatis Chrome bawaan
-				e.preventDefault();
-				deferredPrompt = e;
-				
-				// Tampilkan tombol "Install Aplikasi" di dalam menu titik tiga
-				if (btnInstall) {
-					btnInstall.style.display = 'flex';
-				}
-			});
-
-			function installAplikasiPWA() {
-				if (!deferredPrompt) return;
-				
-				deferredPrompt.prompt();
-				deferredPrompt.userChoice.then((choiceResult) => {
-					if (choiceResult.outcome === 'accepted') {
-						console.log('User menginstal PWA');
-						btnInstall.style.display = 'none';
-					}
-					deferredPrompt = null;
-				});
-			}
-
-			// UI Header Dropdown
+			// Fungsi untuk membuka/tutup dropdown menu titik tiga
 			function toggleHeaderMenu(event) {
 				event.stopPropagation();
 				const menu = document.getElementById('headerDropdown');
@@ -92,6 +61,7 @@
 				}
 			}
 			
+			// Fungsi untuk menutup dropdown
 			function tutupHeaderMenu() {
 				const menu = document.getElementById('headerDropdown');
 				if (menu) {
@@ -99,17 +69,28 @@
 				}
 			}
 			
+			// Tutup dropdown jika mengklik area mana saja di luar menu
 			window.addEventListener('click', () => {
 				tutupHeaderMenu();
 			});
 			
+			// Fungsi Keluar Aplikasi
 			function tutupAplikasi() {
 				if (confirm("Apakah Anda yakin ingin keluar dari aplikasi?")) {
 					window.close();
 				}
 			}
 		</script>
-		<!-- app.js berisi registrasi Service Worker Anda -->
+		<!-- Library Eksternal (Opsional jika Anda memakainya) -->
+		<script src="js/cropper.min.js"></script>
+		<script src="js/html2canvas.min.js"></script>
+		<script src="js/jspdf.umd.min.js"></script>
+		
+		<!-- File Utama Aplikasi Kita -->
 		<script src="js/app.js"></script>
+		<script src="js/workspace.js"></script>
+		<script src="js/editor.js"></script>
+		<script src="js/kalkulator.js"></script>
+		<script src="js/export.js"></script>
 	</body>
 </html>

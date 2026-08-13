@@ -1,6 +1,6 @@
 <div id="gridkertas" class="page">
     <div class="page-header" style="margin-bottom: 8px; padding-bottom: 5px;">
-        <h2 style="font-size: 16px;">Grid / Bagi Rata<small class="app-version">R3-2026.08.02</small></h2>
+        <h2 style="font-size: 16px;">Grid / Bagi Rata2</h2>
         <button onclick="kembaliKeMenu()" class="back-link" title="Kembali ke Menu">🏠</button>
 	</div>
     <div class="main-content">
@@ -41,7 +41,7 @@
                 <div style="flex: 1.5; width: 100%;">
                     <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; width: 100%;">
                         <input type="checkbox" id="gridStretch" style="width: 15px; height: 15px;" onchange="reflowHalaman()">
-                        <span style="font-weight: bold; color: #198754; font-size: 12px;">↕ Stretch</span>
+                        <span style="font-weight: bold; color: #198754; font-size: 12px;">↕ Penuhi Kertas (Crop)</span>
 					</label>
 				</div>
 			</div>
@@ -50,7 +50,7 @@
             
             <div class="form-group" style="margin-bottom: 6px;">
                 <label style="font-size: 12px; min-width: 110px;">Margin (mm)</label>
-                <input type="number" id="gridMarginInput" value="3" min="0" oninput="reflowHalaman()" style="font-size: 13px; padding: 4px 6px; height: 32px;">
+                <input type="number" id="gridMarginInput" value="3" min="0" oninput="updateGapOtomatis('gridkertas')" style="font-size: 13px; padding: 4px 6px; height: 32px;">
 			</div>
             
             <div class="form-group" style="margin-bottom: 6px;">

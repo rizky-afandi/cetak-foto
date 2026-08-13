@@ -1,14 +1,15 @@
-<div id="customfoto" class="page">
+<div id="printgambar" class="page">
 	<div class="page-header">
-		<h2>Custom Ukuran Foto</h2>
+		<h2>Print Gambar</h2>
 		<button onclick="kembaliKeMenu()" class="back-link" title="Kembali ke Menu">🏠</button>
 	</div>
 	<div class="main-content">
 		<div class="sidebar-form">
 			<div class="form-group">
 				<label>Ukuran Kertas</label>
-				<select id="customPaperSize" onchange="renderUlangKertas('customfoto', 'customPaperSize')">
-					<option value="f4">F4 / Folio (21.5 x 33 cm)</option> <!-- Tambahkan ini -->
+				<select id="printgambarPaperSize" onchange="reflowHalaman()">
+					<option value="a3">A3 (29.7 x 42 cm)</option>
+					<option value="f4">F4 / Folio (21.5 x 33 cm)</option>
 					<option value="a4">A4 (21 x 29.7 cm)</option>
 					<option value="a5">A5 (14.8 x 21 cm)</option>
 					<option value="a6">A6 (10.5 x 14.8 cm)</option>
@@ -19,57 +20,40 @@
 					<option value="custom">Custom (Pilih Ukuran)</option>
 				</select>
 			</div>
-			<div class="form-group" id="groupCustomPaper_customfoto" style="display: none;">
+			<div class="form-group" id="groupCustomPaper_printgambar" style="display: none;">
 				<label>Kertas (cm)</label>
-				<input type="number" id="customPaperW_customfoto" value="20" min="1" step="0.1" oninput="renderUlangKertas('customfoto', 'customPaperSize')">
+				<input type="number" id="customPaperW_printgambar" value="20" min="1" step="0.1" oninput="reflowHalaman()">
 				<span>x</span>
-				<input type="number" id="customPaperH_customfoto" value="30" min="1" step="0.1" oninput="renderUlangKertas('customfoto', 'customPaperSize')">
+				<input type="number" id="customPaperH_printgambar" value="30" min="1" step="0.1" oninput="reflowHalaman()">
 			</div>
+			
 			<div class="form-group">
-				<label>Lebar / P. (cm)</label>
-				<input type="number" id="customLebar" value="10" min="0.1" step="0.1" oninput="reflowHalaman()">
-				<span>/</span>
-				<input type="number" id="customPanjang" value="10" min="0.1" step="0.1" oninput="reflowHalaman()">
-			</div>
-			<div class="form-group">
-				<label>Crop</label>
-				
+				<label>Opsi Cetak</label>
 				<div class="checkbox-wrapper">
 					<label class="checkbox-label">
-						<input type="checkbox" id="customStretch" onchange="reflowHalaman()" style="width: 15px; height: 15px;">
-						<span style="font-weight: bold; color: #198754; font-size: 12px;">↕ Penuhi Kertas (Crop)</span>
+						<input type="checkbox" id="printgambarBorderless" onchange="toggleBorderlessPrintgambar()" style="width: 15px; height: 15px;">
+						<span style="font-weight: bold; color: #0d6efd; font-size: 12px;">🖼️ Borderless (Tanpa Tepi)</span>
 					</label>
 				</div>
 			</div>
-			<div class="form-group">
-				<label>Jarak / Gap (mm)</label>
-				<input type="number" id="customGapInput" value="2" min="0" oninput="reflowHalaman()">
-			</div>
+			
 			<div class="form-group">
 				<label>Margin (mm)</label>
-				<input type="number" id="customMarginInput" value="3" min="0" oninput="updateGapOtomatis('customfoto')">
+				<input type="number" id="printgambarMarginInput" value="3" min="0" oninput="reflowHalaman()">
 			</div>
 			<div class="form-group">
 				<label>QTY (Jumlah)</label>
-				<input type="number" id="customQtyInput" value="1" min="1">
+				<input type="number" id="printgambarQtyInput" value="1" min="1">
 			</div>
+			
 			<div class="form-group">
 				<label>Pilih Gambar</label>
 				<button class="btn-action uploader-btn">📁 Upload Foto</button>
 			</div>
-			<div class="form-group">
-				<label></label> 
-				<div style="flex: 1.5; width: 100%;">
-					<label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: 100%;">
-						<input type="checkbox" id="customShowMarking" onchange="reflowHalaman()" style="width: 18px; height: 18px;">
-						<span style="font-weight: bold; color: #198754; font-size: 13px;">📐 Garis Siku</span>
-					</label>
-				</div>
-			</div>
-			<div class="button-group">
+			
+			<div class="button-group2">
 				<button class="btn-control btn-add" onclick="aksiTambah()">➕ Tambah</button>
-				<button class="btn-control btn-auto" onclick="aksiOtomatis()">✨ Penuh</button>
-				<button class="btn-control btn-reset" onclick="aksiResetForm('customfoto')">🧹 Reset</button>
+				<button class="btn-control btn-reset" onclick="aksiResetForm('printgambar')">🧹 Reset</button>
 			</div>
 		</div>
 		<div class="workspace-container">
@@ -87,7 +71,7 @@
 				</div>
 			</div>
 			<div class="paper-wrapper">
-				<div id="workspaceCustom" class="workspace"></div>
+				<div id="workspaceprintgambar" class="workspace"></div>
 			</div>
 		</div>
 	</div>
@@ -100,6 +84,14 @@
 	
 	<!-- Panel Kontrol Editor Gambar -->
 	<div class="crop-controls-panel">
+		<!-- DIPINDAHKAN KE SINI: Checkbox Crop / Stretch Mode -->
+		<div class="control-group" style="justify-content: center; margin-bottom: 8px;">
+			<label class="checkbox-label" style="cursor: pointer;">
+				<input type="checkbox" id="cropStretchCheck" onchange="toggleCropAspectMode()" style="width: 15px; height: 15px;">
+				<span style="font-weight: bold; color: #4ade80; font-size: 12px;">↕ Penuhi Kertas (Bebas Rasio)</span>
+			</label>
+		</div>
+		
 		<!-- Slider Zoom -->
 		<div class="control-group">
 			<label>Zoom:</label>
@@ -131,7 +123,7 @@
 		</div>
 	</div>
 	
-	<!-- Aksi Tombol (Tombol Reset Ditambahkan Sebelum Tombol Crop) -->
+	<!-- Aksi Tombol -->
 	<div class="crop-actions">
 		<button class="btn-control btn-rotate" title="Putar Kiri" onclick="putarCepat(-90)">
 			<span class="btn-icon">↺</span> <span class="btn-text">Kiri</span>

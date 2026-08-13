@@ -1,13 +1,13 @@
 <div id="pasfoto" class="page">
 	<div class="page-header">
-		<h2>Pas Foto Studio<small class="app-version">R3-2026.08.02</small></h2>
+		<h2>Pas Foto Studio22</h2>
 		<button onclick="kembaliKeMenu()" class="back-link" title="Kembali ke Menu">🏠</button>
 	</div>
 	<div class="main-content">
 		<div class="sidebar-form">
 			<div class="form-group">
 				<label>Ukuran Kertas</label>
-				<select id="paperSize" onchange="toggleCustomPaperInput('pasfoto'); renderUlangKertas('pasfoto', 'paperSize')">
+				<select id="paperSize" onchange="renderUlangKertas('pasfoto', 'paperSize')">
 					<option value="f4">F4 / Folio (21.5 x 33 cm)</option> <!-- Tambahkan ini -->
 					<option value="a4">A4 (21 x 29.7 cm)</option>
 					<option value="a5">A5 (14.8 x 21 cm)</option>
@@ -42,7 +42,7 @@
 			</div>
 			<div class="form-group">
 				<label>Margin (mm)</label>
-				<input type="number" id="marginInput" value="3" min="0" oninput="reflowHalaman()">
+				<input type="number" id="marginInput" value="3" min="0" oninput="updateGapOtomatis('pasfoto')">
 			</div>
 			<div class="form-group">
 				<label>QTY (Jumlah)</label>
