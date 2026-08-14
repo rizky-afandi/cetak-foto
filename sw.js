@@ -1,6 +1,7 @@
-const CACHE_NAME = 'cetak-foto-v10'; 
+// file: sw.js
+const CACHE_NAME = 'cetak-foto-v11'; 
 
-// DAFTAR LENGKAP SELURUH FILE APLIKASI (Termasuk Semua File di Folder JS)
+// DAFTAR LENGKAP FILE APLIKASI
 const urlsToCache = [
   './',
   './index.html',
@@ -16,7 +17,7 @@ const urlsToCache = [
   './css/style.css',
   './css/cropper.min.css',
   
-  // SELURUH FILE JAVASCRIPT LENGKAP SESUAI FOLDER
+  // JS
   './js/app.js',
   './js/cropper.min.js',
   './js/editor.js',
@@ -26,7 +27,7 @@ const urlsToCache = [
   './js/kalkulator.js',
   './js/workspace.js',
   
-  // Ikon Aplikasi
+  // Ikon Aplikasi (Disesuaikan dengan file di folder root)
   './LogoA.png',
   './LogoB.png'
 ];
@@ -35,11 +36,11 @@ const urlsToCache = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('SW: Mengunduh seluruh aset lengkap ke cache:', CACHE_NAME);
+      console.log('SW: Mengunduh seluruh aset ke cache:', CACHE_NAME);
       return cache.addAll(urlsToCache);
     })
   );
-  self.skipWaiting(); // Paksa Service Worker baru langsung aktif
+  self.skipWaiting();
 });
 
 // 2. Bersihkan Cache Versi Lama
@@ -49,29 +50,27 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log('SW: Menghapus cache versi lama:', cacheName);
+            console.log('SW: Menghapus cache lama:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     })
   );
-  return self.clients.claim(); // Langsung ambil alih kendali halaman
+  return self.clients.claim();
 });
 
-// 3. Fetch Handling (Strategi: Stale-While-Revalidate untuk Mode Offline Super Cepat)
+// 3. Fetch Handling (Mode Offline Super Cepat)
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = req.url;
 
-  // Abaikan request internal blob/dataURL/POST/PUT
   if (url.startsWith('blob:') || url.startsWith('data:') || req.method !== 'GET') {
     return;
   }
 
   event.respondWith(
     caches.match(req).then((cachedResponse) => {
-      // Ambil pembaruan dari jaringan di latar belakang secara otomatis
       const fetchPromise = fetch(req).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
@@ -84,7 +83,6 @@ self.addEventListener('fetch', (event) => {
         console.log('SW: Mode Offline Aktif:', err);
       });
 
-      // Tampilkan dari cache jika ada, atau gunakan fetch jika file baru
       return cachedResponse || fetchPromise;
     })
   );
