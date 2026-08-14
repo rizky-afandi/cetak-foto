@@ -1,5 +1,4 @@
-// Naikkan versi cache menjadi v9 agar PWA otomatis memperbarui cache di HP
-const CACHE_NAME = 'cetak-foto-v9'; 
+const CACHE_NAME = 'cetak-foto-v10'; 
 
 // DAFTAR LENGKAP SELURUH FILE APLIKASI (Termasuk Semua File di Folder JS)
 const urlsToCache = [
