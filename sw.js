@@ -28,8 +28,8 @@ const urlsToCache = [
   './js/workspace.js',
   
   // Ikon Aplikasi
-  './192.png',
-  './512.png'
+  './LogoA.png',
+  './LogoB.png'
 ];
 
 // 1. Install & Simpan Semua File ke Cache
