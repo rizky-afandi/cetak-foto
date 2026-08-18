@@ -558,7 +558,7 @@ header.in-subpage {
     .crop-modal {
         padding: 10px;
         justify-content: center !important;
-        gap: 20px; 
+        gap: 10px; 
     }
     
     .crop-container-box {
