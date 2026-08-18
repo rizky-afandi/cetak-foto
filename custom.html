@@ -1,6 +1,9 @@
 <div id="customfoto" class="page">
 	<div class="page-header">
-		<h2>Custom Ukuran Foto</h2>
+		<div style="display: flex; align-items: center; gap: 8px;">
+			<h2>Ukuran Foto Custom</h2>
+			<small class="app-version" id="subpageAppVersion"></small>
+		</div>
 		<button onclick="kembaliKeMenu()" class="back-link" title="Kembali ke Menu">🏠</button>
 	</div>
 	<div class="main-content">
@@ -31,16 +34,7 @@
 				<span>/</span>
 				<input type="number" id="customPanjang" value="10" min="0.1" step="0.1" oninput="reflowHalaman()">
 			</div>
-			<div class="form-group">
-				<label>Crop</label>
-				
-				<div class="checkbox-wrapper">
-					<label class="checkbox-label">
-						<input type="checkbox" id="customStretch" onchange="reflowHalaman()" style="width: 15px; height: 15px;">
-						<span style="font-weight: bold; color: #198754; font-size: 12px;">↕ Penuhi Kertas (Crop)</span>
-					</label>
-				</div>
-			</div>
+			
 			<div class="form-group">
 				<label>Jarak / Gap (mm)</label>
 				<input type="number" id="customGapInput" value="2" min="0" oninput="reflowHalaman()">
@@ -78,6 +72,14 @@
 				<button class="btn-zoom btn-zoom2" onclick="ubahZoom(-0.1)">➖</button>
 				<button class="btn-zoom btn-zoom2" onclick="resetZoom()">🔄</button>
 				<div class="export-container">
+					<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'RataPas')">☰</button>
+					<div id="RataPas" class="export-menu">
+						<button class="export-item" onclick="aksiRata('flex-start')">◀ Kiri</button>
+						<button class="export-item" onclick="aksiRata('center')">⬌ Tengah</button>
+						<button class="export-item" onclick="aksiRata('flex-end')">▶ Kanan</button>
+					</div>
+				</div>
+				<div class="export-container">
 					<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'exportMenuCustom')">📤</button>
 					<div id="exportMenuCustom" class="export-menu">
 						<button class="export-item" onclick="aksiExport('JPEG')">🖼️ JPEG</button>
@@ -93,60 +95,44 @@
 	</div>
 </div>
 
-<div id="cropModal" class="crop-modal">
-	<div class="crop-container-box">
+<div id="cropModal" class="crop-modal" style="display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; padding-bottom: 10px;">
+	
+	<div class="crop-container-box" style="margin-bottom: 0px;">
 		<img id="cropImage" src="">
 	</div>
 	
-	<!-- Panel Kontrol Editor Gambar -->
-	<div class="crop-controls-panel">
-		<!-- Slider Zoom -->
-		<div class="control-group">
-			<label>Zoom:</label>
-			<input type="range" id="cropZoomSlider" min="0.1" max="3" step="0.01" value="1">
-		</div>
-		<!-- Slider Rotasi -->
-		<div class="control-group">
-			<label>Rotasi:</label>
-			<input type="range" id="cropRotateSlider" min="-180" max="180" step="1" value="0">
-			<span id="rotateValue">0°</span>
+	<div class="crop-controls-panel" style="padding: 10px; max-width: 400px; margin: 0; width: 100%;">
+		
+		<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px;">
+			<div style="display: flex; align-items: center; gap: 5px;" title="Zoom">
+				<span>🔍</span> <input type="range" id="cropZoomSlider" min="0.1" max="3" step="0.01" value="1" style="width: 100%;">
+			</div>
+			<div style="display: flex; align-items: center; gap: 5px;" title="Rotasi">
+				<span>🔄</span> <input type="range" id="cropRotateSlider" min="-180" max="180" step="1" value="0" style="width: 100%;">
+			<span id="rotateValue" hidden>0°</span> </div>
+			<div style="display: flex; align-items: center; gap: 5px;" title="Cahaya">
+				<span>☀️</span> <input type="range" id="cropBrightness" min="0" max="200" step="1" value="100" style="width: 100%;">
+			</div>
+			<div style="display: flex; align-items: center; gap: 5px;" title="Kontras">
+				<span>🌓</span> <input type="range" id="cropContrast" min="0" max="200" step="1" value="100" style="width: 100%;">
+			</div>
+			<div style="display: flex; align-items: center; gap: 5px;" title="Saturasi">
+				<span>💧</span> <input type="range" id="cropSaturate" min="0" max="200" step="1" value="100" style="width: 100%;">
+			</div>
+			<div style="text-align: left; margin-bottom: 4px;">
+				<label style="cursor: pointer; display: flex; align-items: center; gap: 6px;">
+					<input type="checkbox" id="cropStretchCheck" onchange="toggleCropAspectMode()" style="width: 15px; height: 15px;">
+					<span style="font-weight: bold; color: #4ade80; font-size: 13px;">↕ Stretch</span>
+				</label>
+			</div>
 		</div>
 		
-		<!-- Slider Kecerahan -->
-		<div class="control-group">
-			<label>Cahaya:</label>
-			<input type="range" id="cropBrightness" min="0" max="200" step="1" value="100">
+		<div style="display: flex; gap: 6px; justify-content: space-between;">
+			<button class="btn-control btn-rotate" title="Putar Kiri" onclick="putarCepat(-90)" style="flex: 1; padding: 5px 0; font-size: 18px;">↺</button>
+			<button class="btn-control btn-rotate" title="Putar Kanan" onclick="putarCepat(90)" style="flex: 1; padding: 5px 0; font-size: 18px;">↻</button>
+			<button class="btn-control btn-reset-image" title="Reset" onclick="resetEditGambar()" style="flex: 1; padding: 5px 0; font-size: 18px;">🔄</button>
+			<button class="btn-control btn-add" title="Crop" onclick="terapkanCrop()" style="flex: 1; padding: 5px 0; font-size: 18px;">✅</button>
+			<button class="btn-control btn-reset" title="Batal" onclick="batalCrop()" style="flex: 1; padding: 5px 0; font-size: 18px;">❌</button>
 		</div>
-		
-		<!-- Slider Kontras -->
-		<div class="control-group">
-			<label>Kontras:</label>
-			<input type="range" id="cropContrast" min="0" max="200" step="1" value="100">
-		</div>
-		
-		<!-- Slider Saturasi -->
-		<div class="control-group">
-			<label>Saturasi:</label>
-			<input type="range" id="cropSaturate" min="0" max="200" step="1" value="100">
-		</div>
-	</div>
-	
-	<!-- Aksi Tombol (Tombol Reset Ditambahkan Sebelum Tombol Crop) -->
-	<div class="crop-actions">
-		<button class="btn-control btn-rotate" title="Putar Kiri" onclick="putarCepat(-90)">
-			<span class="btn-icon">↺</span> <span class="btn-text">Kiri</span>
-		</button>
-		<button class="btn-control btn-rotate" title="Putar Kanan" onclick="putarCepat(90)">
-			<span class="btn-icon">↻</span> <span class="btn-text">Kanan</span>
-		</button>
-		<button class="btn-control btn-reset-image" title="Reset Gambar" onclick="resetEditGambar()">
-			<span class="btn-icon">🔄</span> <span class="btn-text">Reset</span>
-		</button>
-		<button class="btn-control btn-add" title="Terapkan Crop" onclick="terapkanCrop()">
-			<span class="btn-icon">✅</span> <span class="btn-text">Crop</span>
-		</button>
-		<button class="btn-control btn-reset" title="Batal" onclick="batalCrop()">
-			<span class="btn-icon">❌</span> <span class="btn-text">Batal</span>
-		</button>
 	</div>
 </div>

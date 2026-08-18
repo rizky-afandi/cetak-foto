@@ -1,5 +1,5 @@
 // file: sw.js
-const CACHE_NAME = 'cetak-foto-v11'; 
+const CACHE_NAME = 'cetak-foto-v13'; 
 
 // DAFTAR LENGKAP FILE APLIKASI
 const urlsToCache = [
