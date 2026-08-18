@@ -43,6 +43,14 @@ function muatHalaman(fileHtml) {
         
         document.getElementById('app-container').innerHTML = html;
         
+        // --- TAMBAHAN KODE: Sinkronkan versi dari index.html ke subhalaman ---
+        const mainVersionEl = document.querySelector('.header-title .app-version');
+        const subVersionEl = document.getElementById('subpageAppVersion');
+        if (mainVersionEl && subVersionEl) {
+            subVersionEl.textContent = mainVersionEl.textContent;
+        }
+        // ---------------------------------------------------------------------
+        
         // Set halaman aktif
         const halamanMap = {
             'pasfoto.html': 'pasfoto', 'grid.html': 'gridkertas',
@@ -57,7 +65,7 @@ function muatHalaman(fileHtml) {
             if (typeof toggleCustomPaperInput === 'function') toggleCustomPaperInput(halamanAktif);
             if (halamanAktif === 'hitunggambar') {
                 if (typeof hitungKapasitasOtomatis === 'function') hitungKapasitasOtomatis();
-            } else {
+                } else {
                 if (typeof renderUlangKertas === 'function') renderUlangKertas(halamanAktif, getSelectId(halamanAktif));
             }
         }, 50);
@@ -129,7 +137,7 @@ function dapatkanPengaturan() {
         p.margin = parseFloat(document.getElementById('marginInput').value) || 0;
         p.qty = parseInt(document.getElementById('qtyInput').value) || 1;
         p.mark = document.getElementById('showMarking').checked;
-    } else if (halamanAktif === 'gridkertas') {
+        } else if (halamanAktif === 'gridkertas') {
         const sizeId = document.getElementById('gridPaperSize').value;
         const paperDim = getPaperDimensions('gridkertas', sizeId);
         const cols = parseInt(document.getElementById('gridKolom').value) || 1;
@@ -140,23 +148,21 @@ function dapatkanPengaturan() {
         p.qty = parseInt(document.getElementById('gridQtyInput').value) || 1;
         p.w_mm = (paperDim.w - (2 * p.margin) - ((cols - 1) * p.gap)) / cols;
         p.h_mm = (paperDim.h - (2 * p.margin) - ((rows - 1) * p.gap)) / rows;
-        p.mark = document.getElementById('gridShowMarking').checked;
-        p.stretch = document.getElementById('gridStretch').checked;
-    } else if (halamanAktif === 'customfoto') {
+        p.mark = document.getElementById('gridShowMarking')?.checked || false;
+        p.stretch = document.getElementById('gridStretch')?.checked || false;
+        } else if (halamanAktif === 'customfoto') {
         p.w_mm = (parseFloat(document.getElementById('customLebar').value) || 0) * 10;
         p.h_mm = (parseFloat(document.getElementById('customPanjang').value) || 0) * 10;
         p.gap = parseFloat(document.getElementById('customGapInput').value) || 0;
         p.margin = parseFloat(document.getElementById('customMarginInput').value) || 0;
         p.qty = parseInt(document.getElementById('customQtyInput').value) || 1;
-        p.mark = document.getElementById('customShowMarking').checked;
-        p.stretch = document.getElementById('customStretch').checked;
-    } else if (halamanAktif === 'polaroid') {
+        p.mark = document.getElementById('customShowMarking')?.checked || false;
+        p.stretch = document.getElementById('customStretch')?.checked || false;
+        } else if (halamanAktif === 'polaroid') {
         p.w_mm = 70; p.h_mm = 90;
-        p.gap = parseFloat(document.getElementById('polaroidGapInput')?.value) || 2;
         p.margin = parseFloat(document.getElementById('polaroidMarginInput')?.value) || 3;
-        p.qty = parseInt(document.getElementById('polaroidQtyInput')?.value) || 1;
         p.mark = document.getElementById('polaroidShowMarking')?.checked || false;
-    } else if (halamanAktif === 'printgambar') {
+        } else if (halamanAktif === 'printgambar') {
         const paperSizeId = document.getElementById('printgambarPaperSize')?.value || '3r';
         const paperDim = getPaperDimensions('printgambar', paperSizeId);
         const isBorderless = document.getElementById('printgambarBorderless')?.checked || false;
@@ -186,7 +192,7 @@ async function hapusCacheAplikasi() {
         localStorage.clear(); sessionStorage.clear();
         alert("Cache bersih! Memuat ulang...");
         window.location.href = window.location.origin + window.location.pathname + '?v=' + new Date().getTime();
-    } catch (error) {
+        } catch (error) {
         window.location.reload(true);
     }
 }
@@ -202,7 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if(typeof toggleCustomPaperInput === 'function') toggleCustomPaperInput(halamanAktif);
         if (halamanAktif === 'hitunggambar') {
             if(typeof hitungKapasitasOtomatis === 'function') hitungKapasitasOtomatis();
-        } else {
+            } else {
             if(typeof renderUlangKertas === 'function') renderUlangKertas(halamanAktif, getSelectId(halamanAktif));
         }
     }, 150);
@@ -220,23 +226,23 @@ function updateGapOtomatis(pageId) {
     if (pageId === 'gridkertas') {
         marginInputId = 'gridMarginInput';
         gapInputId = 'gridGapInput';
-    } else if (pageId === 'customfoto') {
+        } else if (pageId === 'customfoto') {
         marginInputId = 'customMarginInput';
         gapInputId = 'customGapInput';
-    } else if (pageId === 'polaroid') {
+        } else if (pageId === 'polaroid') {
         marginInputId = 'polaroidMarginInput';
         gapInputId = 'polaroidGapInput';
     }
-
+    
     const mInput = document.getElementById(marginInputId);
     const gInput = document.getElementById(gapInputId);
-
+    
     if (mInput && gInput) {
         const marginVal = parseFloat(mInput.value) || 0;
         // Rumus: Jarak antar gambar = 2 x Margin
         gInput.value = marginVal * 2;
     }
-
+    
     // Jalankan reflow agar layout kertas langsung update
     if (typeof reflowHalaman === 'function') {
         reflowHalaman();
