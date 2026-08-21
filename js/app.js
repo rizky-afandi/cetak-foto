@@ -29,7 +29,8 @@ document.body.appendChild(fileInput);
 
 // 3. FUNGSI NAVIGASI HALAMAN
 function muatHalaman(fileHtml) {
-    fetch(fileHtml)
+    // Tambahkan query timestamp agar selalu mengambil file HTML terbaru (bypass cache)
+    fetch(fileHtml + '?v=' + new Date().getTime())
     .then(response => {
         if (!response.ok) throw new Error("Gagal memuat halaman");
         return response.text();
@@ -41,15 +42,21 @@ function muatHalaman(fileHtml) {
         if (mainMenu) mainMenu.style.display = 'none';
         if (header) header.style.display = 'none';
         
-        document.getElementById('app-container').innerHTML = html;
+        // Render isi file HTML subhalaman ke app-container
+        const appContainer = document.getElementById('app-container');
+        appContainer.innerHTML = html;
         
-        // --- TAMBAHAN KODE: Sinkronkan versi dari index.html ke subhalaman ---
-        const mainVersionEl = document.querySelector('.header-title .app-version');
-        const subVersionEl = document.getElementById('subpageAppVersion');
-        if (mainVersionEl && subVersionEl) {
-            subVersionEl.textContent = mainVersionEl.textContent;
-        }
-        // ---------------------------------------------------------------------
+        // --- SINKRONISASI VERSI OTOMATIS FROM INDEX ---
+        // Ambil teks versi yang tertera di header index.html (misal: R6-2026.08.18)
+        const mainVersionEl = document.querySelector('header .app-version');
+        const appVersionText = mainVersionEl ? mainVersionEl.textContent.trim() : 'R6-2026.08.18';
+        
+        // Cari wadah versi di subhalaman (baik id="subpageAppVersion" atau class "app-version")
+        const subVersionEls = appContainer.querySelectorAll('#subpageAppVersion, .app-version');
+        subVersionEls.forEach(el => {
+            el.textContent = appVersionText;
+        });
+        // ----------------------------------------------
         
         // Set halaman aktif
         const halamanMap = {
@@ -159,9 +166,13 @@ function dapatkanPengaturan() {
         p.mark = document.getElementById('customShowMarking')?.checked || false;
         p.stretch = document.getElementById('customStretch')?.checked || false;
         } else if (halamanAktif === 'polaroid') {
-        p.w_mm = 70; p.h_mm = 90;
+        p.w_mm = 60; // Lebar fisik polaroid sesuai gambar referensi
+        p.h_mm = 88.9; // Tinggi fisik polaroid sesuai gambar referensi
+        p.gap = 0; // Jarak antar kartu rapat (0px)
         p.margin = parseFloat(document.getElementById('polaroidMarginInput')?.value) || 3;
-        p.mark = document.getElementById('polaroidShowMarking')?.checked || false;
+        p.qty = 1;
+        // PERBAIKAN: Sesuaikan dengan ID checkbox di polaroid.html
+        p.mark = document.getElementById('polaroidMarking')?.checked || false;
         } else if (halamanAktif === 'printgambar') {
         const paperSizeId = document.getElementById('printgambarPaperSize')?.value || '3r';
         const paperDim = getPaperDimensions('printgambar', paperSizeId);
@@ -216,34 +227,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Fungsi untuk mengupdate Gap otomatis (2x Margin)
 function updateGapOtomatis(pageId) {
-    const marginEl = document.getElementById(`${pageId === 'pasfoto' ? '' : pageId}MarginInput`);
-    const gapEl = document.getElementById(`${pageId === 'pasfoto' ? '' : pageId}GapInput`);
-    
-    // Khusus mapping id input jika ada perbedaan penamaan di HTML Anda:
-    let marginInputId = 'marginInput';
-    let gapInputId = 'gapInput';
-    
-    if (pageId === 'gridkertas') {
-        marginInputId = 'gridMarginInput';
-        gapInputId = 'gridGapInput';
-        } else if (pageId === 'customfoto') {
-        marginInputId = 'customMarginInput';
-        gapInputId = 'customGapInput';
-        } else if (pageId === 'polaroid') {
-        marginInputId = 'polaroidMarginInput';
-        gapInputId = 'polaroidGapInput';
+    // 1. Validasi: Jalankan otomatisasi Gap HANYA jika di halaman 'gridkertas'
+    if (pageId === 'gridkertas' || halamanAktif === 'gridkertas') {
+        const mInput = document.getElementById('gridMarginInput');
+        const gInput = document.getElementById('gridGapInput');
+        
+        if (mInput && gInput) {
+            const marginVal = parseFloat(mInput.value) || 0;
+            // Rumus khusus Grid: Jarak antar gambar = 2 x Margin
+            gInput.value = marginVal * 2;
+        }
     }
     
-    const mInput = document.getElementById(marginInputId);
-    const gInput = document.getElementById(gapInputId);
-    
-    if (mInput && gInput) {
-        const marginVal = parseFloat(mInput.value) || 0;
-        // Rumus: Jarak antar gambar = 2 x Margin
-        gInput.value = marginVal * 2;
-    }
-    
-    // Jalankan reflow agar layout kertas langsung update
+    // 2. Jalankan reflow agar layout kertas pada halaman mana pun langsung di-update
     if (typeof reflowHalaman === 'function') {
         reflowHalaman();
     }

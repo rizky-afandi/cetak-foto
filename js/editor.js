@@ -120,6 +120,14 @@ function terapkanCrop() {
         targetRecropElement = null; reflowHalaman();
     } else {
         currentImgSrc = newSrc; currentImgClassName = classNameBaru;
+        
+        // --- KODE TAMBAHAN: OTOMATIS TAMPILKAN KE KERTAS ---
+        // Setelah modal crop ditutup, otomatis panggil tombol "Tambah"
+        setTimeout(() => {
+            if (typeof aksiTambah === 'function') {
+                aksiTambah();
+            }
+        }, 50);
     }
     tutupCropModal();
 }

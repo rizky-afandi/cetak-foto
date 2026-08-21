@@ -105,7 +105,7 @@ function susunUlangGambar(images, targetWorkspaceId, pageId) {
         let h_mm_foto = imgObj.h_mm;
         let wPx_foto = `${(w_mm_foto - 0.2) * PX_PER_MM}px`;
         let hPx_foto = `${(h_mm_foto - 0.2) * PX_PER_MM}px`;
-
+        
         // Buat elemen foto baru murni membawa ukuran mandiri gambar ini saja
         let div = buatElemenFoto(
             imgObj.src, 
@@ -189,9 +189,8 @@ function buatElemenFoto(imgSrc, widthPx, heightPx, imgClassName, w_mm, h_mm) {
         reflowHalaman(); 
     }));
     
-    // 3. TOMBOL PUTAR 90° (SOLUSI PRESISI UNTUK PASFOTO & CUSTOMFOTO)
+    // 3. TOMBOL PUTAR 90° (DAPAT DIGUNAKAN DI SEMUA HALAMAN)
     actionsDiv.appendChild(createBtn('🔄', 'Putar 90°', () => {
-    if (halamanAktif === 'pasfoto' || halamanAktif === 'customfoto') {
         let tempImg = new Image();
         tempImg.src = img.src; 
         
@@ -205,20 +204,30 @@ function buatElemenFoto(imgSrc, widthPx, heightPx, imgClassName, w_mm, h_mm) {
             ctx.rotate(Math.PI / 2);
             ctx.drawImage(tempImg, -tempImg.width / 2, -tempImg.height / 2);
             
-            // 1. Ganti src HANYA pada foto ini
-            img.src = canvas.toDataURL('image/jpeg', 0.95);
+            // 1. Ganti gambar (src) dengan versi hasil putaran
+            const rotatedSrc = canvas.toDataURL('image/jpeg', 0.95);
+            img.src = rotatedSrc;
             
-            // 2. Tukar dataset ukuran mm HANYA pada foto ini
-            let currentW = parseFloat(div.dataset.w_mm);
-            let currentH = parseFloat(div.dataset.h_mm);
-            div.dataset.w_mm = currentH;
-            div.dataset.h_mm = currentW;
+            // 2. Tukar ukuran dataset fisik mm (Lebar <-> Tinggi)
+            let currentW = parseFloat(div.dataset.w_mm) || 0;
+            let currentH = parseFloat(div.dataset.h_mm) || 0;
             
-            // 3. Render ulang kertas secara aman
+            if (currentW > 0 && currentH > 0) {
+                div.dataset.w_mm = currentH;
+                div.dataset.h_mm = currentW;
+                
+                // Ubah dimensi elemen div foto di DOM
+                div.style.width = `${(currentH - 0.2) * PX_PER_MM}px`;
+                div.style.height = `${(currentW - 0.2) * PX_PER_MM}px`;
+            }
+            
+            // Tandai status rotasi foto
+            div.dataset.rotated = (div.dataset.rotated === "true") ? "false" : "true";
+            
+            // 3. Susun ulang kertas secara otomatis
             reflowHalaman();
         };
-    }
-}));
+    }));
     
     // 4. Tombol Crop Ulang
     actionsDiv.appendChild(createBtn('✂️', 'Crop Ulang', () => {
@@ -335,10 +344,10 @@ function reflowHalaman() {
                 if (halamanAktif === 'printgambar') {
                     finalW = p.w_mm;
                     finalH = p.h_mm;
-                } else if (halamanAktif === 'gridkertas') {
+                    } else if (halamanAktif === 'gridkertas') {
                     finalW = p.w_mm;
                     finalH = p.h_mm;
-                } else {
+                    } else {
                     // KHUSUS PASFOTO & CUSTOMFOTO:
                     // BACA MURNI dari dataset foto masing-masing! Jangan pakai variabel form p.w_mm lagi
                     finalW = parseFloat(item.dataset.w_mm) || p.w_mm;
@@ -393,16 +402,34 @@ function updateLayoutRealtime() {
     }
     
     workspace.querySelectorAll('.paper-page').forEach(page => {
-        page.style.padding = `${padPx}px`; 
-        page.style.gap = `${p.gap * PX_PER_MM}px`;
+        page.style.padding = `${padPx}px`;
         
-        if (p.mark && halamanAktif !== 'gridkertas' && halamanAktif !== 'printgambar') {
-            page.classList.add('show-marks'); 
+        if (halamanAktif === 'polaroid') {
+            page.style.gap = '0px';
+            page.style.columnGap = '0px';
+            page.style.rowGap = '0px';
+            page.style.flexWrap = 'wrap';
+            
+            // GANTI BAGIAN INI MENJADI 'center'
+            page.style.setProperty('justify-content', window.posisiX || 'center', 'important');
+            page.style.setProperty('align-content', window.posisiY || 'center', 'important');
+            page.style.setProperty('align-items', window.posisiY || 'center', 'important');
+            
+            const polaroidMark = document.getElementById('polaroidMarking')?.checked;
+            if (polaroidMark) page.classList.add('show-marks');
+            else page.classList.remove('show-marks');
             } else {
-            page.classList.remove('show-marks');
+            page.style.gap = `${p.gap * PX_PER_MM}px`;
+            
+            if (p.mark && halamanAktif !== 'gridkertas' && halamanAktif !== 'printgambar') {
+                page.classList.add('show-marks'); 
+                } else {
+                page.classList.remove('show-marks');
+            }
         }
         
         page.querySelectorAll('.grid-mark-overlay').forEach(el => el.remove());
+        page.querySelectorAll('.polaroid-mark-overlay').forEach(el => el.remove());
         
         // --- MODE GRID KERTAS ---
         if (halamanAktif === 'gridkertas' && p.mark) {
@@ -429,18 +456,16 @@ function updateLayoutRealtime() {
             }
         }
         
-        // --- MODE PASFOTO & CUSTOMFOTO (LOGIKA SIKU TEPI DIPERBAIKI) ---
+        // --- MODE PASFOTO & CUSTOMFOTO ---
         if ((halamanAktif === 'pasfoto' || halamanAktif === 'customfoto') && p.mark) {
             const items = Array.from(page.querySelectorAll('.photo-item'));
             if (items.length > 0) {
-                
                 items.forEach((item) => {
                     const mTL = item.querySelector('.mark-tl');
                     const mTR = item.querySelector('.mark-tr');
                     const mBL = item.querySelector('.mark-bl');
                     const mBR = item.querySelector('.mark-br');
                     
-                    // 1. Reset semua border & posisi marking
                     [mTL, mTR, mBL, mBR].forEach(m => {
                         if (m) {
                             m.style.border = 'none';
@@ -452,67 +477,124 @@ function updateLayoutRealtime() {
                         }
                     });
                     
-                    // 2. Ambil koordinat foto saat ini (dengan toleransi 5px)
                     const itemLeft = item.offsetLeft;
                     const itemTop = item.offsetTop;
                     const itemRight = itemLeft + item.offsetWidth;
                     const itemBottom = itemTop + item.offsetHeight;
                     
-                    // 3. Deteksi Keberadaan Tetangga di 4 Sisi Foto (Atas, Bawah, Kiri, Kanan)
-                    const hasTopNeighbor = items.some(other => 
-                        other !== item && 
-                        Math.abs(other.offsetLeft - itemLeft) < 5 && 
-                        Math.abs((other.offsetTop + other.offsetHeight) - itemTop) < 10
-                    );
+                    const hasTopNeighbor = items.some(other => other !== item && Math.abs(other.offsetLeft - itemLeft) < 5 && Math.abs((other.offsetTop + other.offsetHeight) - itemTop) < 10);
+                    const hasBottomNeighbor = items.some(other => other !== item && Math.abs(other.offsetLeft - itemLeft) < 5 && Math.abs(other.offsetTop - itemBottom) < 10);
+                    const hasLeftNeighbor = items.some(other => other !== item && Math.abs(other.offsetTop - itemTop) < 5 && Math.abs((other.offsetLeft + other.offsetWidth) - itemLeft) < 10);
+                    const hasRightNeighbor = items.some(other => other !== item && Math.abs(other.offsetTop - itemTop) < 5 && Math.abs(other.offsetLeft - itemRight) < 10);
                     
-                    const hasBottomNeighbor = items.some(other => 
-                        other !== item && 
-                        Math.abs(other.offsetLeft - itemLeft) < 5 && 
-                        Math.abs(other.offsetTop - itemBottom) < 10
-                    );
+                    if (!hasTopNeighbor && !hasLeftNeighbor && mTL) { mTL.style.borderTop = '0.75pt solid #000'; mTL.style.borderLeft = '0.75pt solid #000'; }
+                    if (!hasTopNeighbor && !hasRightNeighbor && mTR) { mTR.style.borderTop = '0.75pt solid #000'; mTR.style.borderRight = '0.75pt solid #000'; }
+                    if (!hasBottomNeighbor && !hasLeftNeighbor && mBL) { mBL.style.borderBottom = '0.75pt solid #000'; mBL.style.borderLeft = '0.75pt solid #000'; }
+                    if (!hasBottomNeighbor && !hasRightNeighbor && mBR) { mBR.style.borderBottom = '0.75pt solid #000'; mBR.style.borderRight = '0.75pt solid #000'; }
+                });
+            }
+        }
+        
+        // --- MODE KHUSUS POLAROID.HTML: SUDUT LUAR = L, PERTEMUAN = T PRESISI ---
+        if (halamanAktif === 'polaroid' && document.getElementById('polaroidMarking')?.checked) {
+            const items = Array.from(page.querySelectorAll('.polaroid-card'));
+            
+            if (items.length > 0) {
+                const markLength = 2 * PX_PER_MM; // Panjang garis
+                const markWidth = 0.75;           // Tebal garis
+                const tolerance = 4;              // Toleransi kemelesetan piksel
+                
+                // 1. Bersihkan semua garis lama & CSS bawaan
+                page.querySelectorAll('.polaroid-mark-overlay').forEach(el => el.remove());
+                items.forEach(card => {
+                    card.querySelectorAll('.crop-mark').forEach(mark => {
+                        mark.style.display = 'none';
+                        mark.style.border = 'none';
+                    });
+                });
+                
+                // 2. Ambil koordinat dan fungsi pendeteksi tetangga
+                const cardsData = items.map(card => ({
+                    left: card.offsetLeft,
+                    top: card.offsetTop,
+                    right: card.offsetLeft + card.offsetWidth,
+                    bottom: card.offsetTop + card.offsetHeight
+                }));
+                
+                function getNeighbor(card, side) {
+                    return cardsData.find(other => {
+                        if (other === card) return false;
+                        if (side === 'left') return Math.abs(other.right - card.left) <= tolerance && Math.abs(other.top - card.top) <= tolerance;
+                        if (side === 'right') return Math.abs(other.left - card.right) <= tolerance && Math.abs(other.top - card.top) <= tolerance;
+                        if (side === 'top') return Math.abs(other.bottom - card.top) <= tolerance && Math.abs(other.left - card.left) <= tolerance;
+                        if (side === 'bottom') return Math.abs(other.top - card.bottom) <= tolerance && Math.abs(other.left - card.left) <= tolerance;
+                    });
+                }
+                
+                // Petakan sisi mana saja yang menyentuh area kosong (Outer Edges)
+                cardsData.forEach(card => {
+                    card.nLeft = getNeighbor(card, 'left');
+                    card.nRight = getNeighbor(card, 'right');
+                    card.nTop = getNeighbor(card, 'top');
+                    card.nBottom = getNeighbor(card, 'bottom');
                     
-                    const hasLeftNeighbor = items.some(other => 
-                        other !== item && 
-                        Math.abs(other.offsetTop - itemTop) < 5 && 
-                        Math.abs((other.offsetLeft + other.offsetWidth) - itemLeft) < 10
-                    );
+                    card.isOuterLeft = !card.nLeft;
+                    card.isOuterRight = !card.nRight;
+                    card.isOuterTop = !card.nTop;
+                    card.isOuterBottom = !card.nBottom;
+                });
+                
+                function garis(left, top, width, height) {
+                    const el = document.createElement('div');
+                    el.className = 'polaroid-mark-overlay';
+                    Object.assign(el.style, {
+                        position: 'absolute', left: `${left}px`, top: `${top}px`,
+                        width: `${width}px`, height: `${height}px`,
+                        background: '#000', pointerEvents: 'none', zIndex: '100'
+                    });
+                    page.appendChild(el);
+                }
+                
+                // 3. Gambar Garis Potong Berdasarkan Status Tepi
+                cardsData.forEach(card => {
                     
-                    const hasRightNeighbor = items.some(other => 
-                        other !== item && 
-                        Math.abs(other.offsetTop - itemTop) < 5 && 
-                        Math.abs(other.offsetLeft - itemRight) < 10
-                    );
-                    
-                    // 4. ATURAN PENAMPILAN MARKING SIKU:
-                    // Siku HANYA MUNCUL jika di kedua sisinya TIDAK ADA TETANGGA (ujung luar bebas)
-                    
-                    // A. Pojok Kiri Atas (TL): Muncul jika tidak ada tetangga ATAS dan KIRI
-                    if (!hasTopNeighbor && !hasLeftNeighbor && mTL) {
-                        mTL.style.borderTop = '0.75pt solid #000';
-                        mTL.style.borderLeft = '0.75pt solid #000';
+                    // --- A. TEPI LUAR (Area Kosong) ---
+                    if (card.isOuterLeft) {
+                        if (!card.nTop || (card.nTop && !card.nTop.isOuterLeft)) garis(card.left, card.top, markWidth, markLength); // Siku turun
+                        if (!card.nBottom || (card.nBottom && !card.nBottom.isOuterLeft)) garis(card.left, card.bottom - markLength, markWidth, markLength); // Siku naik
+                    }
+                    if (card.isOuterRight) {
+                        // Ini yang akan menggambar siku turun di ujung kanan area kosong
+                        if (!card.nTop || (card.nTop && !card.nTop.isOuterRight)) garis(card.right - markWidth, card.top, markWidth, markLength);
+                        if (!card.nBottom || (card.nBottom && !card.nBottom.isOuterRight)) garis(card.right - markWidth, card.bottom - markLength, markWidth, markLength);
+                    }
+                    if (card.isOuterTop) {
+                        if (!card.nLeft || (card.nLeft && !card.nLeft.isOuterTop)) garis(card.left, card.top, markLength, markWidth); // Siku ke kanan
+                        if (!card.nRight || (card.nRight && !card.nRight.isOuterTop)) garis(card.right - markLength, card.top, markLength, markWidth); // Siku ke kiri
+                    }
+                    if (card.isOuterBottom) {
+                        if (!card.nLeft || (card.nLeft && !card.nLeft.isOuterBottom)) garis(card.left, card.bottom - markWidth, markLength, markWidth); 
+                        if (!card.nRight || (card.nRight && !card.nRight.isOuterBottom)) garis(card.right - markLength, card.bottom - markWidth, markLength, markWidth); 
                     }
                     
-                    // B. Pojok Kanan Atas (TR): Muncul jika tidak ada tetangga ATAS dan KANAN
-                    if (!hasTopNeighbor && !hasRightNeighbor && mTR) {
-                        mTR.style.borderTop = '0.75pt solid #000';
-                        mTR.style.borderRight = '0.75pt solid #000';
+                    // --- B. PERTEMUAN ANTAR KARTU (Garis Pemisah Lurus) ---
+                    if (card.nRight) {
+                        const rCard = card.nRight;
+                        if (!card.nTop && !rCard.nTop) garis(card.right - markWidth/2, card.top, markWidth, markLength);
+                        if (!card.nBottom && !rCard.nBottom) garis(card.right - markWidth/2, card.bottom - markLength, markWidth, markLength);
                     }
-                    
-                    // C. Pojok Kiri Bawah (BL): Muncul jika tidak ada tetangga BAWAH dan KIRI
-                    if (!hasBottomNeighbor && !hasLeftNeighbor && mBL) {
-                        mBL.style.borderBottom = '0.75pt solid #000';
-                        mBL.style.borderLeft = '0.75pt solid #000';
-                    }
-                    
-                    // D. Pojok Kanan Bawah (BR): Muncul jika tidak ada tetangga BAWAH dan KANAN
-                    if (!hasBottomNeighbor && !hasRightNeighbor && mBR) {
-                        mBR.style.borderBottom = '0.75pt solid #000';
-                        mBR.style.borderRight = '0.75pt solid #000';
+                    if (card.nBottom) {
+                        const bCard = card.nBottom;
+                        if (!card.nLeft && !bCard.nLeft) garis(card.left, card.bottom - markWidth/2, markLength, markWidth);
+                        if (!card.nRight && !bCard.nRight) garis(card.right - markLength, card.bottom - markWidth/2, markLength, markWidth);
                     }
                 });
             }
         }
+        
+        
     });
+    
     terapkanZoom();
 }
 
@@ -661,3 +743,245 @@ function aksiRata(align) {
     }
     tutupSemuaMenu();
 }
+
+// ==========================================================================
+//    TAMBAHAN LOGIKA KHUSUS HALAMAN POLAROID
+// ==========================================================================
+
+// 1. Membelokkan sistem reflow bawaan saat berada di halaman polaroid
+const originalRenderUlangKertas = window.renderUlangKertas;
+window.renderUlangKertas = function(pageId, selectId) {
+    if (pageId === 'polaroid') {
+        window.renderKertasPolaroid();
+        } else {
+        if(originalRenderUlangKertas) originalRenderUlangKertas(pageId, selectId);
+    }
+};
+
+const originalReflowHalaman = window.reflowHalaman;
+window.reflowHalaman = function() {
+    if (halamanAktif === 'polaroid') {
+        // Cek dan setel tampilan frame jika foto baru saja dipotong oleh Cropper
+        document.querySelectorAll('.polaroid-card').forEach(card => {
+            const img = card.querySelector('img');
+            if (img && img.src && !img.src.endsWith(window.location.host + '/')) {
+                card.classList.add('has-image');
+            }
+        });
+        window.renderKertasPolaroid();
+        } else {
+        if(originalReflowHalaman) originalReflowHalaman();
+    }
+};
+
+// 2. Fungsi Utama Merender Kertas Polaroid
+window.renderKertasPolaroid = function() {
+    const workspace = document.getElementById('workspacePolaroid');
+    if (!workspace) return;
+    
+    const sizeId = document.getElementById('polaroidPaperSize')?.value || '3r';
+    const orient = document.getElementById('polaroidOrientation')?.value || 'portrait';
+    let dim = getPaperDimensions('polaroid', sizeId);
+    
+    // Kalkulasi presisi Portrait / Landscape
+    if (orient === 'landscape') {
+        dim = { w: Math.max(dim.w, dim.h), h: Math.min(dim.w, dim.h) };
+        } else {
+        dim = { w: Math.min(dim.w, dim.h), h: Math.max(dim.w, dim.h) };
+    }
+    
+    const existingCards = Array.from(workspace.querySelectorAll('.polaroid-card'));
+    workspace.innerHTML = '';
+    
+    let currentPage = tambahHalamanKertas('workspacePolaroid', dim.w * PX_PER_MM, dim.h * PX_PER_MM);
+    const marginPx = (parseFloat(document.getElementById('polaroidMarginInput')?.value) || 0) * PX_PER_MM;
+    
+    const applyPageStyle = (page) => {
+        page.style.padding = `${marginPx}px`;
+        page.style.gap = `0px`; 
+        page.style.columnGap = `0px`;
+        page.style.rowGap = `0px`;
+        
+        // GANTI BAGIAN INI MENJADI 'center'
+        page.style.setProperty('justify-content', window.posisiX || 'center', 'important');
+        page.style.setProperty('align-content', window.posisiY || 'center', 'important');
+        page.style.setProperty('align-items', window.posisiY || 'center', 'important');
+        if (document.getElementById('polaroidMarking')?.checked) {
+            page.classList.add('show-marks');
+            } else {
+            page.classList.remove('show-marks');
+        }
+    };
+    applyPageStyle(currentPage);
+    
+    existingCards.forEach(card => {
+        currentPage.appendChild(card);
+        // Berikan toleransi piksel yang cukup agar tidak mudah lompat ke halaman 2
+        if (currentPage.scrollHeight > currentPage.clientHeight + 10 || currentPage.scrollWidth > currentPage.clientWidth + 10) {
+            currentPage.removeChild(card);
+            currentPage = tambahHalamanKertas('workspacePolaroid', dim.w * PX_PER_MM, dim.h * PX_PER_MM);
+            applyPageStyle(currentPage);
+            currentPage.appendChild(card);
+        }
+    });
+    
+    if (existingCards.length === 0) {
+        window.tambahKartuPolaroid(currentPage, dim, applyPageStyle);
+    }
+    
+    updateLayoutRealtime();
+    terapkanZoom();
+};
+
+// 3. Fungsi Menambahkan Frame Polaroid
+window.tambahKartuPolaroid = function(targetPage = null, dim = null, applyPageStyle = null) {
+    const id = 'pol_' + Math.random().toString(36).substr(2, 9);
+    const card = document.createElement('div');
+    card.className = 'polaroid-card';
+    card.id = id;
+    
+    card.innerHTML = `
+    <div class="polaroid-photo" onclick="window.triggerUploadPolaroid('${id}')">
+    <img id="img_${id}" src="" alt="foto" class="stretch-off">
+    <button class="polaroid-add-btn">➕</button>
+    </div>
+    <div class="polaroid-menu">
+    <button class="btn-dots" onclick="window.togglePolaroidBgMenu(event, '${id}')">⋮</button>
+    <div class="bg-dropdown" id="menu_${id}">
+    <button onclick="window.setPolaroidBg('${id}', 'none')">⬜ Polos Putih</button>
+    <button onclick="window.setPolaroidBg('${id}', 'ig')">📱 Tema IG</button>
+    <button onclick="window.setPolaroidBg('${id}', 'player')">🎵 Tema Player</button>
+    <button onclick="window.triggerCustomBg('${id}')">📁 Custom Background</button>
+    </div>
+    </div>
+    `;
+    
+    let workspace = document.getElementById('workspacePolaroid');
+    if(!workspace) return;
+    
+    let pages = workspace.querySelectorAll('.paper-page');
+    let lastPage = targetPage || (pages.length > 0 ? pages[pages.length - 1] : null);
+    
+    if (lastPage) {
+        lastPage.appendChild(card);
+        if (!targetPage && (lastPage.scrollHeight > lastPage.clientHeight + 2 || lastPage.scrollWidth > lastPage.clientWidth + 2)) {
+            lastPage.removeChild(card);
+            
+            if (!dim) {
+                const sizeId = document.getElementById('polaroidPaperSize')?.value || '3r';
+                const orient = document.getElementById('polaroidOrientation')?.value || 'portrait';
+                dim = getPaperDimensions('polaroid', sizeId);
+                if (orient === 'landscape') dim = { w: Math.max(dim.w, dim.h), h: Math.min(dim.w, dim.h) };
+            }
+            
+            lastPage = tambahHalamanKertas('workspacePolaroid', dim.w * PX_PER_MM, dim.h * PX_PER_MM);
+            const marginPx = (parseFloat(document.getElementById('polaroidMarginInput')?.value) || 0) * PX_PER_MM;
+            lastPage.style.padding = `${marginPx}px`;
+            lastPage.style.gap = `0px`;
+            lastPage.style.columnGap = `0px`;
+            lastPage.style.rowGap = `0px`;
+            if (document.getElementById('polaroidMarking')?.checked) lastPage.classList.add('show-marks');
+            
+            lastPage.appendChild(card);
+        }
+    }
+    updateLayoutRealtime();
+    terapkanZoom();
+};
+
+// 4. Integrasi dengan Cropper (editor.js)
+window.triggerUploadPolaroid = function(id) {
+    // Membidik targetRecropElement agar Cropper memasukkan foto ke kotak ini
+    targetRecropElement = document.getElementById(id);
+    
+    // PANGGIL VARIABEL GLOBAL fileInput BUKAN querySelector
+    if (typeof fileInput !== 'undefined') {
+        fileInput.click();
+        } else {
+        alert("Sistem uploader belum siap, silakan muat ulang halaman.");
+    }
+};
+
+// 5. Fungsi Menu dan Background
+window.togglePolaroidBgMenu = function(e, id) {
+    e.stopPropagation();
+    const menu = document.getElementById('menu_' + id);
+    document.querySelectorAll('.bg-dropdown').forEach(m => { if (m !== menu) m.style.display = 'none'; });
+    menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
+};
+
+document.addEventListener('click', () => {
+    document.querySelectorAll('.bg-dropdown').forEach(m => m.style.display = 'none');
+});
+
+window.setPolaroidBg = function(id, type) {
+    const card = document.getElementById(id);
+    if (!card) return;
+    
+    if (type === 'none') {
+        card.style.backgroundImage = 'none';
+        card.style.backgroundColor = '#ffffff';
+        } else if (type === 'ig') {
+        card.style.backgroundImage = 'url(img/bg-01.png)';
+        } else if (type === 'player') {
+        card.style.backgroundImage = 'url(img/bg-02.png)';
+    }
+};
+
+let currentCustomBgTarget = null;
+window.triggerCustomBg = function(id) {
+    currentCustomBgTarget = id;
+    document.getElementById('bgUploaderPolaroid').click();
+};
+
+window.handleCustomBg = function(input) {
+    if (input.files && input.files[0] && currentCustomBgTarget) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const card = document.getElementById(currentCustomBgTarget);
+            if (card) {
+                card.style.backgroundImage = `url(${e.target.result})`;
+            }
+            currentCustomBgTarget = null;
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+    input.value = '';
+};
+
+// 6. Reset Form
+window.resetPolaroid = function() {
+    const workspace = document.getElementById('workspacePolaroid');
+    if (workspace) workspace.innerHTML = '';
+    window.renderKertasPolaroid();
+};
+
+// Variabel memori agar saat tambah kertas baru posisinya tidak berantakan
+window.posisiX = 'center';
+window.posisiY = 'center';
+
+window.aksiRataPosisi = function(x, y) {
+    window.posisiX = x;
+    window.posisiY = y;
+    
+    let workspace = document.getElementById(getWorkspaceId(halamanAktif));
+    if (workspace) {
+        workspace.querySelectorAll('.paper-page').forEach(page => {
+            page.style.setProperty('justify-content', x, 'important');
+            page.style.setProperty('align-content', y, 'important');
+            page.style.setProperty('align-items', y, 'important');
+        });
+    }
+    
+    // PERBAIKAN BUG MENU: Hapus paksaan style dan gunakan sistem klik natural
+    let menu = document.getElementById('RataPas');
+    if(menu) {
+        menu.style.display = ''; // Bersihkan blokir inline
+    }
+    document.body.click(); // Memicu klik di luar menu agar tertutup otomatis dengan aman
+    
+    // Tunggu animasi geser selesai, lalu gambar ulang garis potongnya
+    setTimeout(() => {
+        if (typeof updateLayoutRealtime === 'function') updateLayoutRealtime();
+    }, 100);
+};
