@@ -1,7 +1,7 @@
 <div id="customfoto" class="page">
 	<div class="page-header">
 		<div style="display: flex; align-items: center; gap: 8px;">
-			<h2>Ukuran Foto Custom</h2>
+			<h2>Ukuran Custom</h2>
 			<small class="app-version" id="subpageAppVersion"></small>
 		</div>
 		<button onclick="kembaliKeMenu()" class="back-link" title="Kembali ke Menu">🏠</button>
@@ -41,7 +41,7 @@
 			</div>
 			<div class="form-group">
 				<label>Margin (mm)</label>
-				<input type="number" id="customMarginInput" value="3" min="0" oninput="updateGapOtomatis('customfoto')">
+				<input type="number" id="customMarginInput" value="3" min="0" oninput="reflowHalaman()">
 			</div>
 			<div class="form-group">
 				<label>QTY (Jumlah)</label>

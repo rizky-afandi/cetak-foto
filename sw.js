@@ -1,5 +1,5 @@
 // file: sw.js
-const CACHE_NAME = 'cetak-foto-v13'; 
+const CACHE_NAME = 'cetak-foto-v100'; 
 
 // DAFTAR LENGKAP FILE APLIKASI
 const urlsToCache = [
@@ -28,8 +28,10 @@ const urlsToCache = [
   './js/workspace.js',
   
   // Ikon Aplikasi (Disesuaikan dengan file di folder root)
-  './LogoA.png',
-  './LogoB.png'
+  './img/bg-01.png',
+  './img/bg-02.png',
+  './img/LogoA.png',
+  './img/LogoB.png'
 ];
 
 // 1. Install & Simpan Semua File ke Cache
@@ -71,17 +73,24 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(req).then((cachedResponse) => {
+      // Ambil file versi terbaru dari jaringan
       const fetchPromise = fetch(req).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(req, responseToCache);
+            cache.put(req, responseToCache); // Update cache secara diam-diam
           });
         }
         return networkResponse;
       }).catch((err) => {
-        console.log('SW: Mode Offline Aktif:', err);
+        console.log('SW: Offline mode', err);
       });
+
+      // Kembalikan cachedResponse JIKA ada, kalau tidak ada baru tunggu fetchPromise
+      // TAPI untuk file HTML sub-menu (pasfoto.html, dll), utamakan Network jika Online
+      if (req.headers.get('accept')?.includes('text/html')) {
+        return fetchPromise.then(netRes => netRes || cachedResponse).catch(() => cachedResponse);
+      }
 
       return cachedResponse || fetchPromise;
     })

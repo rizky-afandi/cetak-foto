@@ -1,139 +1,282 @@
-<div id="pasfoto" class="page">
+<style>
+	/* --- STYLING KHUSUS KARTU POLAROID --- */
+.polaroid-card {
+    /* 1. BINGKAI LUAR MURNI 6 x 8.89 cm */
+    width: 60mm !important; 
+    height: 88.9mm !important;
+    min-width: 60mm !important;
+    min-height: 88.9mm !important;
+    max-width: 60mm !important;
+    max-height: 88.9mm !important;
+    
+    background-color: #ffffff !important;
+    
+    /* 🌟 TAMBAHKAN 3 BARIS INI UNTUK STRETCH BACKGROUND 🌟 */
+    background-size: 100% 100% !important; /* Menarik gambar pas ke ujung kiri-kanan & atas-bawah */
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    
+    position: relative !important; 
+    box-sizing: border-box !important;
+    margin: 0px !important;
+    padding: 0px !important; 
+    border: none !important;
+    flex-shrink: 0 !important;
+    display: block !important; 
+}
+	
+	.polaroid-photo {
+    /* KOORDINAT TITIK TENGAH DIKUNCI MURNI */
+    position: absolute !important;
+    top: 10mm !important;  
+    left: 6mm !important;  
+    
+    /* LUBANG FOTO MURNI 4.8 x 6 cm */
+    width: 48mm !important;
+    height: 60mm !important;
+    min-width: 48mm !important;
+    min-height: 60mm !important;
+    max-width: 48mm !important;
+    max-height: 60mm !important;
+    
+    background-color: #f3f4f6 !important;
+    box-sizing: border-box !important;
+    margin: 0px !important;
+    padding: 0px !important;
+    border: none !important;
+    overflow: hidden !important;
+    
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+
+    /* 🌟 TAMBAHAN EFEK MEMBULAT & SHADOW 🌟 */
+    border-radius: 5px !important; /* Membuat ujung melengkung */
+    box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.4) !important; /* Menambah efek bayangan gelap */
+}
+
+.polaroid-photo img {
+    /* FOTO MENGIKUTI LUBANG DENGAN SEMPURNA */
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important; 
+    
+    /* 🌟 UBAH BORDER RADIUS GAMBAR MENJADI 5px AGAR IKUT MEMBULAT 🌟 */
+    border-radius: 5px !important; 
+    
+    display: block !important;
+    margin: 0px !important;
+    padding: 0px !important;
+}
+	
+	/* Pengaturan Kertas Utama agar Menempel */
+#workspacePolaroid .paper-page {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0px !important;
+    column-gap: 0px !important;
+    row-gap: 0px !important;
+    /* justify-content dan align-content DIHAPUS agar bisa digerakkan dari tombol */
+}
+	
+	.polaroid-add-btn {
+    background: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    z-index: 2;
+	}
+	
+	.polaroid-menu {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    z-index: 10;
+    display: none;
+	}
+	
+	/* State ketika foto sudah dimasukkan dari Cropper */
+	.polaroid-card.has-image .polaroid-photo img { display: block; }
+	.polaroid-card.has-image .polaroid-photo { border: none; }
+	.polaroid-card.has-image .polaroid-add-btn { display: none; }
+	.polaroid-card.has-image .polaroid-menu { display: block; }
+	
+	.btn-dots {
+    background: rgba(255,255,255,0.9);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+	}
+	
+	.bg-dropdown {
+    display: none;
+    position: absolute;
+    bottom: 35px;
+    right: 0;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    flex-direction: column;
+    min-width: 150px;
+    overflow: hidden;
+	}
+	
+	.bg-dropdown button {
+    padding: 10px 12px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+	}
+	
+	.bg-dropdown button:hover { background: #f1f5f9; }
+	
+	
+	
+	
+</style>
+
+<div id="polaroid" class="page">
 	<div class="page-header">
 		<div style="display: flex; align-items: center; gap: 8px;">
-			<h2>📷 Foto Polaroid</h2>
+			<h2>📷 Polaroid</h2>
 			<small class="app-version" id="subpageAppVersion"></small>
 		</div>
 		<button onclick="kembaliKeMenu()" class="back-link" title="Kembali ke Menu">🏠</button>
 	</div>
-	<div class="main-content">
-		<div class="sidebar-form">
-			<div class="form-group">
-				<label>Ukuran Kertas</label>
-				<select id="paperSize" onchange="renderUlangKertas('pasfoto', 'paperSize')">
-					<option value="f4">F4 / Folio (21.5 x 33 cm)</option> <!-- Tambahkan ini -->
-					<option value="a4">A4 (21 x 29.7 cm)</option>
-					<option value="a5">A5 (14.8 x 21 cm)</option>
-					<option value="a6">A6 (10.5 x 14.8 cm)</option>
-					<option value="3r" selected>3R (8.9 x 12.7 cm)</option>
-					<option value="4r">4R (10.2 x 15.2 cm)</option>
-					<option value="5r">5R (12.7 x 17.8 cm)</option>
-					<option value="6r">6R (15.2 x 20.3 cm)</option>
-					<option value="custom">Custom (Pilih Ukuran)</option>
+    <div class="main-content">
+        <div class="sidebar-form">
+            <div class="form-group">
+                <label>Ukuran Kertas</label>
+                <select id="polaroidPaperSize" onchange="window.renderKertasPolaroid()">
+                    <option value="f4">F4 / Folio (21.5 x 33 cm)</option>
+                    <option value="a4">A4 (21 x 29.7 cm)</option>
+                    <option value="a5">A5 (14.8 x 21 cm)</option>
+                    <option value="a6">A6 (10.5 x 14.8 cm)</option>
+                    <option value="3r" selected>3R (8.9 x 12.7 cm)</option>
+                    <option value="4r">4R (10.2 x 15.2 cm)</option>
+                    <option value="5r">5R (12.7 x 17.8 cm)</option>
+                    <option value="6r">6R (15.2 x 20.3 cm)</option>
 				</select>
 			</div>
-			<div class="form-group" id="groupCustomPaper_pasfoto" style="display: none;">
-				<label>Ukuran Custom (cm)</label>
-				<input type="number" id="customPaperW_pasfoto" value="20" min="1" step="0.1" placeholder="Lebar" oninput="renderUlangKertas('pasfoto', 'paperSize')">
-				<span style="align-self: center;">x</span>
-				<input type="number" id="customPaperH_pasfoto" value="30" min="1" step="0.1" placeholder="Tinggi" oninput="renderUlangKertas('pasfoto', 'paperSize')">
+            
+            <div class="form-group">
+                <label>Posisi Kertas</label>
+                <select id="polaroidOrientation" onchange="window.renderKertasPolaroid()">
+                    <option value="portrait" selected>Potrait</option>
+                    <option value="landscape">Landscape</option>
+				</select>
 			</div>
-			<div class="form-group">
-				<label>Margin (mm)</label>
-				<input type="number" id="marginInput" value="3" min="0" oninput="updateGapOtomatis('pasfoto')">
+            
+            <div class="form-group">
+                <label>Margin (mm)</label>
+                <input type="number" id="polaroidMarginInput" value="3" min="0" oninput="window.renderKertasPolaroid()">
 			</div>
-			<div class="form-group">
-				<label>Pilih Gambar</label>
-				<button class="btn-action uploader-btn">📁 Upload Foto</button>
-			</div>
-			<div class="form-group">
-				<label></label> 
-				<div style="flex: 1.5; width: 100%;">
-					<label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: 100%;">
-						<input type="checkbox" id="showMarking" onchange="reflowHalaman()" style="width: 18px; height: 18px;">
-						<span style="font-weight: bold; color: #198754; font-size: 13px;">📐 Garis Potong</span>
+            
+            <div class="form-group">
+                <label></label> 
+                <div style="flex: 1.5; width: 100%;">
+                    <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; width: 100%;">
+                        <input type="checkbox" id="polaroidMarking" onchange="window.renderKertasPolaroid()" style="width: 18px; height: 18px;">
+                        <span style="font-weight: bold; color: #198754; font-size: 13px;">📐 Garis Potong</span>
 					</label>
 				</div>
 			</div>
-			<div class="button-group">
-				<button class="btn-control btn-add" onclick="aksiTambah()">➕ Tambah</button>
-				<button class="btn-control btn-auto" onclick="aksiOtomatis()">✨ Penuh</button>
-				<button class="btn-control btn-reset" onclick="aksiResetForm('pasfoto')">🧹 Reset</button>
+            
+            <div class="button-group2" style="grid-template-columns: repeat(2, 1fr);">
+                <button class="btn-control btn-add" onclick="window.tambahKartuPolaroid()">➕ Tambah</button>
+                <button class="btn-control btn-reset" onclick="window.resetPolaroid()">🧹 Reset</button>
 			</div>
+            
+            <!-- Input File Tersembunyi untuk Custom Background -->
+            <input type="file" id="bgUploaderPolaroid" accept="image/*" style="display:none;" onchange="window.handleCustomBg(this)">
 		</div>
-		<div class="workspace-container">
-			<div class="zoom-controls">
-				<button class="btn-zoom btn-zoom2" onclick="ubahZoom(0.1)">➕</button>
-				<button class="btn-zoom btn-zoom2" onclick="ubahZoom(-0.1)">➖</button>
-				<button class="btn-zoom btn-zoom2" onclick="resetZoom()">🔄</button>
+        
+        <div class="workspace-container">
+            <div class="zoom-controls">
+                <button class="btn-zoom btn-zoom2" onclick="ubahZoom(0.1)">➕</button>
+                <button class="btn-zoom btn-zoom2" onclick="ubahZoom(-0.1)">➖</button>
+                <button class="btn-zoom btn-zoom2" onclick="resetZoom()">🔄</button>
 				<div class="export-container">
-					<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'RataPas')">☰</button>
+					<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'RataPas')" title="Atur Posisi">☰</button>
 					<div id="RataPas" class="export-menu">
-						<button class="export-item" onclick="aksiRata('flex-start')">◀ Kiri</button>
-						<button class="export-item" onclick="aksiRata('center')">⬌ Tengah</button>
-						<button class="export-item" onclick="aksiRata('flex-end')">▶ Kanan</button>
+						<button class="export-item" onclick="aksiRataPosisi('flex-start', 'flex-start')">↖ Kiri Atas</button>
+						<button class="export-item" onclick="aksiRataPosisi('center', 'flex-start')">⬆ Tengah Atas</button>
+						<button class="export-item" onclick="aksiRataPosisi('flex-end', 'flex-start')">↗ Kanan Atas</button>
+						<button class="export-item" onclick="aksiRataPosisi('center', 'center')">⬌ Tengah (Center)</button>
 					</div>
 				</div>
-				<div class="export-container">
-					<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'exportMenuPas')">📤</button>
-					<div id="exportMenuPas" class="export-menu">
-						<button class="export-item" onclick="aksiExport('JPEG')">🖼️ JPEG</button>
-						<button class="export-item" onclick="aksiExport('PDF')">📄 PDF</button>
-						<button class="export-item" onclick="aksiExport('Print')">🖨️ Print</button>
+                <div class="export-container">
+                    <button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'exportMenuPolaroid')">📤</button>
+                    <div id="exportMenuPolaroid" class="export-menu">
+                        <button class="export-item" onclick="aksiExport('JPEG')">🖼️ JPEG</button>
+                        <button class="export-item" onclick="aksiExport('PDF')">📄 PDF</button>
+                        <button class="export-item" onclick="aksiExport('Print')">🖨️ Print</button>
 					</div>
 				</div>
 			</div>
-			<div class="paper-wrapper">
-				<div id="workspacePas" class="workspace"></div>
+            <div class="paper-wrapper">
+                <div id="workspacePolaroid" class="workspace"></div>
 			</div>
 		</div>
 	</div>
 </div>
 
-<div id="cropModal" class="crop-modal">
-	<div class="crop-container-box">
+<div id="cropModal" class="crop-modal" style="display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; padding-bottom: 10px;">
+	
+	<div class="crop-container-box" style="margin-bottom: 0px;">
 		<img id="cropImage" src="">
 	</div>
 	
-	<!-- Panel Kontrol Editor Gambar -->
-	<div class="crop-controls-panel">
-		<!-- Slider Zoom -->
-		<div class="control-group">
-			<label>Zoom:</label>
-			<input type="range" id="cropZoomSlider" min="0.1" max="3" step="0.01" value="1">
-		</div>
-		<!-- Slider Rotasi -->
-		<div class="control-group">
-			<label>Rotasi:</label>
-			<input type="range" id="cropRotateSlider" min="-180" max="180" step="1" value="0">
-			<span id="rotateValue">0°</span>
+	<div class="crop-controls-panel" style="padding: 10px; max-width: 400px; margin: 0; width: 100%;">
+		
+		<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px;">
+			<div style="display: flex; align-items: center; gap: 5px;" title="Zoom">
+				<span>🔍</span> <input type="range" id="cropZoomSlider" min="0.1" max="3" step="0.01" value="1" style="width: 100%;">
+			</div>
+			<div style="display: flex; align-items: center; gap: 5px;" title="Rotasi">
+				<span>🔄</span> <input type="range" id="cropRotateSlider" min="-180" max="180" step="1" value="0" style="width: 100%;">
+			<span id="rotateValue" hidden>0°</span> </div>
+			<div style="display: flex; align-items: center; gap: 5px;" title="Cahaya">
+				<span>☀️</span> <input type="range" id="cropBrightness" min="0" max="200" step="1" value="100" style="width: 100%;">
+			</div>
+			<div style="display: flex; align-items: center; gap: 5px;" title="Kontras">
+				<span>🌓</span> <input type="range" id="cropContrast" min="0" max="200" step="1" value="100" style="width: 100%;">
+			</div>
+			<div style="display: flex; align-items: center; gap: 5px;" title="Saturasi">
+				<span>💧</span> <input type="range" id="cropSaturate" min="0" max="200" step="1" value="100" style="width: 100%;">
+			</div>
+			<div style="text-align: left; margin-bottom: 4px;">
+				<label style="cursor: pointer; display: flex; align-items: center; gap: 6px;">
+					<input type="checkbox" id="cropStretchCheck" onchange="toggleCropAspectMode()" style="width: 15px; height: 15px;">
+					<span style="font-weight: bold; color: #4ade80; font-size: 13px;">↕ Stretch</span>
+				</label>
+			</div>
 		</div>
 		
-		<!-- Slider Kecerahan -->
-		<div class="control-group">
-			<label>Cahaya:</label>
-			<input type="range" id="cropBrightness" min="0" max="200" step="1" value="100">
+		<div style="display: flex; gap: 6px; justify-content: space-between;">
+			<button class="btn-control btn-rotate" title="Putar Kiri" onclick="putarCepat(-90)" style="flex: 1; padding: 5px 0; font-size: 18px;">↺</button>
+			<button class="btn-control btn-rotate" title="Putar Kanan" onclick="putarCepat(90)" style="flex: 1; padding: 5px 0; font-size: 18px;">↻</button>
+			<button class="btn-control btn-reset-image" title="Reset" onclick="resetEditGambar()" style="flex: 1; padding: 5px 0; font-size: 18px;">🔄</button>
+			<button class="btn-control btn-add" title="Crop" onclick="terapkanCrop()" style="flex: 1; padding: 5px 0; font-size: 18px;">✅</button>
+			<button class="btn-control btn-reset" title="Batal" onclick="batalCrop()" style="flex: 1; padding: 5px 0; font-size: 18px;">❌</button>
 		</div>
-		
-		<!-- Slider Kontras -->
-		<div class="control-group">
-			<label>Kontras:</label>
-			<input type="range" id="cropContrast" min="0" max="200" step="1" value="100">
-		</div>
-		
-		<!-- Slider Saturasi -->
-		<div class="control-group">
-			<label>Saturasi:</label>
-			<input type="range" id="cropSaturate" min="0" max="200" step="1" value="100">
-		</div>
-	</div>
-	
-	<!-- Aksi Tombol (Tombol Reset Ditambahkan Sebelum Tombol Crop) -->
-	<div class="crop-actions">
-		<button class="btn-control btn-rotate" title="Putar Kiri" onclick="putarCepat(-90)">
-			<span class="btn-icon">↺</span> <span class="btn-text">Kiri</span>
-		</button>
-		<button class="btn-control btn-rotate" title="Putar Kanan" onclick="putarCepat(90)">
-			<span class="btn-icon">↻</span> <span class="btn-text">Kanan</span>
-		</button>
-		<button class="btn-control btn-reset-image" title="Reset Gambar" onclick="resetEditGambar()">
-			<span class="btn-icon">🔄</span> <span class="btn-text">Reset</span>
-		</button>
-		<button class="btn-control btn-add" title="Terapkan Crop" onclick="terapkanCrop()">
-			<span class="btn-icon">✅</span> <span class="btn-text">Crop</span>
-		</button>
-		<button class="btn-control btn-reset" title="Batal" onclick="batalCrop()">
-			<span class="btn-icon">❌</span> <span class="btn-text">Batal</span>
-		</button>
 	</div>
 </div>
