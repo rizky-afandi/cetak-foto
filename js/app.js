@@ -62,7 +62,8 @@ function muatHalaman(fileHtml) {
         const halamanMap = {
             'pasfoto.html': 'pasfoto', 'grid.html': 'gridkertas',
             'custom.html': 'customfoto', 'hitung.html': 'hitunggambar',
-            'polaroid.html': 'polaroid', 'printgambar.html': 'printgambar'
+            'polaroid.html': 'polaroid', 'printgambar.html': 'printgambar',
+            'prompt.html': 'prompt'
         };
         halamanAktif = halamanMap[fileHtml] || '';
         
@@ -244,3 +245,56 @@ function updateGapOtomatis(pageId) {
         reflowHalaman();
     }
 }
+
+// FUNGSI PENCARIAN PROMPT
+window.filterPromptList = function() {
+    const input = document.getElementById('promptSearchInput');
+    if (!input) return;
+    const filter = input.value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.prompt-card');
+
+    cards.forEach(card => {
+        const keyword = (card.getAttribute('data-keyword') || '').toLowerCase();
+        const textContent = card.innerText.toLowerCase();
+        
+        if (keyword.includes(filter) || textContent.includes(filter)) {
+            card.style.display = "flex";
+        } else {
+            card.style.display = "none";
+        }
+    });
+};
+
+// FUNGSI COPY TO CLIPBOARD
+window.salinPromptText = function(teks, btnElement) {
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(teks).then(() => {
+            window.tampilkanUmpanBalikBerhasil(btnElement);
+        }).catch(() => {
+            window.fallbackCopyText(teks, btnElement);
+        });
+    } else {
+        window.fallbackCopyText(teks, btnElement);
+    }
+};
+
+window.fallbackCopyText = function(teks, btnElement) {
+    const tempInput = document.createElement("input");
+    tempInput.value = teks;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempInput);
+    window.tampilkanUmpanBalikBerhasil(btnElement);
+};
+
+window.tampilkanUmpanBalikBerhasil = function(btnElement) {
+    const teksAwal = btnElement.innerHTML;
+    btnElement.innerHTML = "✅ Tersalin!";
+    btnElement.classList.add("copied");
+
+    setTimeout(() => {
+        btnElement.innerHTML = teksAwal;
+        btnElement.classList.remove("copied");
+    }, 1500);
+};
