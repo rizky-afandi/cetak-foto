@@ -425,105 +425,229 @@ header.in-subpage {
 .export-item:hover { background: #f1f3f5; }
 
 /* ==========================================================================
-    STYLING MODAL CROP
-========================================================================== */
+   CROP MODAL
+   ========================================================================== */
+
 .crop-modal {
     display: none;
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.9);
+
+    background: rgba(0, 0, 0, 0.9);
+
     z-index: 9999;
+
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+
     padding: 12px;
-    gap: 12px;
+    gap: 10px;
+
+    box-sizing: border-box;
 }
 
 .crop-modal.active {
     display: flex;
 }
 
+
+/* ==========================================================================
+   PREVIEW GAMBAR
+   ========================================================================== */
+
 .crop-container-box {
     flex: 1;
     width: 100%;
     max-width: 800px;
-    max-height: calc(100vh - 200px);
+    max-height: calc(100vh - 220px);
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     overflow: hidden;
-    border-radius: 8px;
     background: #111;
+    border-radius: 8px;
+    box-sizing: border-box;
 }
 
 .crop-container-box img {
+    display: block;
     max-width: 100%;
     max-height: 100%;
-    display: block;
+    width: auto;
+    height: auto;
+    object-fit: contain;
 }
+
+
+/* ==========================================================================
+   PANEL KONTROL
+   ========================================================================== */
 
 .crop-controls-panel {
     width: 100%;
     max-width: 550px;
-    background: rgba(28, 28, 30, 0.9);
-    backdrop-filter: blur(10px);
-    border-radius: 10px;
-    padding: 8px 12px !important;
-    color: #fff;
+    padding: 10px 12px;
+    background: rgba(28, 28, 30, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    margin: 0 !important; 
+    border-radius: 10px;
+    color: #fff;
+    box-sizing: border-box;
+    backdrop-filter: blur(10px);
 }
+
+
+/* ==========================================================================
+   BARIS KONTROL SLIDER
+   ========================================================================== */
 
 .crop-controls-panel .control-group {
+    width: 100%;
     display: flex;
     align-items: center;
-    gap: 8px !important;
-    margin-bottom: 4px;
+    gap: 8px;
+    margin: 0 0 7px 0;
+    box-sizing: border-box;
 }
 
-.crop-controls-panel label {
-    font-size: 11px !important;
-    width: 55px !important;
+/* Icon */
+
+.crop-controls-panel .control-icon {
+    width: 24px;
+    min-width: 24px;
+    text-align: center;
+    font-size: 15px;
+    line-height: 1;
+}
+
+
+/* Label */
+
+.crop-controls-panel .control-group > label {
+    width: 60px !important;
+    min-width: 60px;
+    margin: 0;
+    padding: 0;
     color: #ccc;
+    font-size: 11px !important;
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+/* Slider */
+
+.crop-controls-panel input[type="range"] {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+    height: 4px;
+    margin: 0;
+    padding: 0;
+    border-radius: 2px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+/* Nilai rotasi */
+
+#rotateValue {
+    width: 35px;
+    min-width: 35px;
+    color: #aaa;
+    font-size: 11px;
     text-align: right;
     white-space: nowrap;
 }
 
-.crop-controls-panel input[type="range"] {
-    flex: 1;
-    height: 4px;
-    border-radius: 2px;
-    accent-color: #3b82f6;
-    cursor: pointer;
+/* ==========================================================================
+   STRETCH
+   ========================================================================== */
+
+.crop-controls-panel .stretch-control {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 3px;
+    box-sizing: border-box;
 }
 
-.crop-actions {
-    display: flex;
-    justify-content: space-between;
+.crop-controls-panel .stretch-control label {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    display: inline-flex !important;
     align-items: center;
-    gap: 8px;
+    justify-content: flex-end;
+    gap: 5px;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #4ade80 !important;
+    font-size: 13px !important;
+    font-weight: bold;
+    text-align: left !important;
+    white-space: nowrap;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.crop-controls-panel .stretch-control input[type="checkbox"] {
+    width: 15px !important;
+    height: 15px !important;
+    min-width: 15px !important;
+    max-width: 15px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex: 0 0 15px !important;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.crop-controls-panel .stretch-control span {
+    width: auto !important;
+    min-width: 0 !important;
+    white-space: nowrap;
+    line-height: 15px;
+}
+
+
+/* ==========================================================================
+   TOMBOL AKSI
+   ========================================================================== */
+
+.crop-actions {
     width: 100%;
     max-width: 550px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-sizing: border-box;
 }
 
 .btn-control {
     flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 5px;
     padding: 10px 12px;
     border: none;
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease-in-out;
     white-space: nowrap;
+    box-sizing: border-box;
+    transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
 }
 
 .btn-control:hover {
@@ -535,10 +659,28 @@ header.in-subpage {
     transform: translateY(0);
 }
 
-.btn-rotate { background-color: #374151; color: #ffffff; }
-.btn-reset-image { background-color: #f59e0b; color: #ffffff; }
-.btn-add { background-color: #2563eb; color: #ffffff; }
-.btn-reset { background-color: #dc2626; color: #ffffff; }
+
+/* Warna tombol */
+
+.btn-rotate {
+    background-color: #374151;
+    color: #fff;
+}
+
+.btn-reset-image {
+    background-color: #f59e0b;
+    color: #fff;
+}
+
+.btn-add {
+    background-color: #2563eb;
+    color: #fff;
+}
+
+.btn-reset {
+    background-color: #dc2626;
+    color: #fff;
+}
 
 /* ==========================================================================
     RESPONSIF DESKTOP & MOBILE
@@ -555,51 +697,70 @@ header.in-subpage {
 }
 
 @media screen and (max-width: 600px) {
+
     .crop-modal {
         padding: 10px;
+        gap: 8px;
         justify-content: center !important;
-        gap: 10px; 
     }
-    
+
     .crop-container-box {
-        flex: none !important;
+        flex: 1 !important;
         width: 100%;
         max-height: 45vh !important;
-        margin-bottom: 0 !important;
+        margin: 0 !important;
     }
-    
+
     .crop-controls-panel {
-        max-height: none !important;
+        width: 100%;
+        max-width: none;
         padding: 8px 10px !important;
-        width: 100%;
-        margin: 0 !important; 
+        margin: 0 !important;
     }
-    
-    .crop-actions {
-        gap: 6px;
-        margin-top: 0 !important;
-        width: 100%;
-    }
-    
+
     .crop-controls-panel .control-group {
-        margin-bottom: 13px;
+        margin-bottom: 8px;
+        gap: 6px;
     }
-    
-    .crop-controls-panel label {
+
+    .crop-controls-panel .control-icon {
+        width: 22px;
+        min-width: 22px;
+        font-size: 14px;
+    }
+
+    .crop-controls-panel .control-group > label {
+        width: 50px !important;
+        min-width: 50px;
         font-size: 10px !important;
-        width: 45px !important;
     }
-    
+
+    .crop-controls-panel input[type="range"] {
+        height: 4px;
+    }
+
     #rotateValue {
+        width: 30px;
+        min-width: 30px;
         font-size: 10px !important;
     }
-    
+
+    .crop-controls-panel .stretch-control {
+        margin-top: 2px;
+    }
+
+    .crop-controls-panel .stretch-control label {
+        font-size: 12px !important;
+    }
+
     .btn-control {
         padding: 8px 0;
+
         font-size: 16px;
     }
-    
+
     .btn-control .btn-text {
         display: none;
     }
 }
+
