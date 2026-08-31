@@ -1,0 +1,346 @@
+<style>
+	/* --- STYLING HALAMAN PROMPT --- */
+	#prompt .main-content {
+	display: flex !important;
+	flex-direction: column !important; /* Memaksa susunan dari atas ke bawah (menimpa bawaan style.css) */
+	height: 100% !important;
+	overflow: hidden !important;
+	}
+	
+	.prompt-search-box {
+	width: 100%;
+	margin-bottom: 16px;
+	flex-shrink: 0; /* Mencegah input pencarian terhimpit */
+	}
+	
+	.prompt-search-input {
+	width: 100%;
+	padding: 12px 16px;
+	border: 1px solid #d8b4fe;
+	border-radius: 8px;
+	font-size: 14px;
+	outline: none;
+	background: #FAF5FF;
+	color: #374151;
+	box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+	}
+	
+	.prompt-search-input:focus {
+	border-color: #9333ea;
+	background: #ffffff;
+	}
+	
+	.prompt-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 12px;
+	width: 100%;
+	flex-grow: 1; /* Mengisi penuh sisa ruang kosong di bawah pencarian */
+	overflow-y: auto;
+	padding-right: 8px;
+	padding-bottom: 20px;
+	align-content: start; /* Mengelompokkan kartu ke atas agar tidak merenggang otomatis */
+	}
+	
+	.prompt-card {
+	background: #ffffff;
+	border: 1px solid #e9d5ff;
+	border-radius: 10px;
+	padding: 10px 12px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	gap: 6px;
+	box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+	}
+	
+	.prompt-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(147, 51, 234, 0.1);
+	border-color: #c084fc;
+	}
+	
+	.prompt-header-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start; /* Ubah ke flex-start agar sejajar di atas jika teks 2 baris */
+	gap: 8px;
+	width: 100%;
+	}
+	
+	.prompt-tag {
+	font-family: 'Courier New', Courier, monospace;
+	font-weight: bold;
+	font-size: 13px;
+	color: #7e22ce;
+	background: #f3e8ff;
+	padding: 4px 8px;
+	border-radius: 6px;
+	
+	/* Trik Pemotong Teks Otomatis */
+	display: -webkit-box;
+	-webkit-line-clamp: 2; /* Ubah angka ini jika ingin 1 atau 3 baris */
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: normal;
+	flex: 1; /* Mengisi penuh sisa ruang agar tombol copy terdorong ke kanan */
+	}
+	
+	.prompt-desc {
+	font-size: 12px;
+	color: #4b5563;
+	line-height: 1.4;
+	}
+	
+	.btn-copy-prompt {
+	background: #2563eb;
+	color: #ffffff;
+	border: none;
+	border-radius: 6px;
+	padding: 6px 12px;
+	font-size: 12px;
+	font-weight: bold;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	flex-shrink: 0;
+	margin-top: 2px;
+	transition: background 0.2s, transform 0.1s;
+	}
+	
+	.btn-copy-prompt:hover {
+	background: #1d4ed8;
+	}
+	
+	.btn-copy-prompt:active {
+	transform: scale(0.95);
+	}
+	
+	.btn-copy-prompt.copied {
+	background: #16a34a !important;
+	}
+	
+	@media (max-width: 600px) {
+	.prompt-grid {
+	grid-template-columns: 1fr;
+	max-height: none;
+	}
+	}
+</style>
+
+<div id="prompt" class="page">
+	<div class="page-header">
+		<div style="display: flex; align-items: center; gap: 8px;">
+			<h2>Kumpulan Prompt</h2>
+			<small class="app-version" id="subpageAppVersion"></small>
+		</div>
+		<button onclick="kembaliKeMenu()" class="back-link" title="Kembali ke Menu">🏠</button>
+	</div>
+	
+	<div class="main-content">
+		<!-- Box Input Pencarian -->
+		<div class="prompt-search-box" style="position: relative; display: flex; align-items: center;">
+			<input type="text" id="promptSearchInput" class="prompt-search-input" 
+			placeholder="🔍 Cari prompt atau deskripsi (misal: enhance, noise, warna)..." 
+			oninput="window.filterPromptList(); document.getElementById('clearPromptBtn').style.display = this.value ? 'block' : 'none';" 
+			style="padding-right: 35px;">
+			
+			<button id="clearPromptBtn" 
+			onclick="document.getElementById('promptSearchInput').value=''; window.filterPromptList(); this.style.display='none'; document.getElementById('promptSearchInput').focus();" 
+			style="position: absolute; right: 12px; background: none; border: none; font-size: 14px; cursor: pointer; display: none; color: #6b7280; padding: 4px;" 
+			title="Hapus pencarian">✖</button>
+		</div>
+		
+		<!-- Grid Daftar Prompt -->
+		<div class="prompt-grid" id="promptGridContainer">
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/relight</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/relight', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">mengubah, mengatur ulang, atau menambahkan efek pencahayaan</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/enhance</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/enhance', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">meningkatkan kualitas foto, detail, ketajaman, dan kejernihan.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/upscale</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/upscale', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">memperbesar resolusi dan mempertajam detail.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/sharpen</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/sharpen', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">membuat detail lebih tajam, terutama foto yang agak blur.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/denoise</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/denoise', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">mengurangi noise/bintik, cocok untuk foto yang diambil dalam kondisi minim cahaya.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/color correct</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/color correct', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">memperbaiki warna yang terlalu pucat, kekuningan, atau kehijauan.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/hdr</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/hdr', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">memperjelas detail area gelap dan terang, tetapi sebaiknya jangan berlebihan.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/dehaze</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/dehaze', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">mengurangi kabut/haze dan membuat langit serta objek lebih jelas.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/contrast</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/contrast', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">memperbaiki kontras agar foto lebih hidup.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/exposure</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/exposure', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">memperbaiki foto yang terlalu gelap atau terlalu terang.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/white balance</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/white balance', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">membuat warna lebih natural.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/remove noise and sharpen</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/remove noise and sharpen', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">kombinasi bagus untuk foto HP.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/cinematic</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/cinematic', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">memberi nuansa fotografi sinematik.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/color grade</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/color grade', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">mengatur tone warna, misalnya golden hour, warm sunset, teal-orange, dll.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/restore</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/restore', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">memperbaiki foto lama/rusak.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">/face enhance</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText('/face enhance', this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">memperjelas wajah, tetapi perlu hati-hati agar wajah tidak berubah.</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">Prepare this photo for high-quality photo printing...</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText(`Prepare this photo for high-quality photo printing. Upscale the image, improve fine details, sharpness, clarity, color accuracy, dynamic range, and reduce noise and compression artifacts. Preserve natural skin texture and realistic colors. Do not alter faces, people, objects, clothing, or composition. Produce a clean, high-resolution, print-ready photographic result.`, this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">Untuk cetak foto</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">Enhance this photo professionally. Improve sharpness, clarity...</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText(`Enhance this photo professionally. Improve sharpness, clarity, dynamic range, exposure, contrast, and fine details. Reduce noise and compression artifacts. Keep the original composition, colors, objects, facial features, body shape, clothing, and background unchanged. Make it look like a high-quality DSLR photograph while remaining natural and realistic.`, this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">foto biasa dari HP → lebih jernih</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">Relight and professionally enhance this photo. Create beautiful natural...</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText(`Relight and professionally enhance this photo. Create beautiful natural golden-hour lighting, recover highlight and shadow details, improve the sky and water tones, enhance the golden reflection on the water, increase clarity and dynamic range, reduce haze and noise, and add subtle cinematic depth. Preserve the exact person, pose, clothing, boat, sun position, horizon, and original composition. Do not add or remove objects. Keep the result photorealistic.`, this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">Foto sunset / sunrise 🌅</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">Correct the exposure of this photo. Brighten the dark...</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText(`Correct the exposure of this photo. Brighten the dark areas naturally while preserving highlights and important details. Improve shadow recovery, contrast, white balance, sharpness, and overall dynamic range. Reduce noise. Do not change the original objects, people, faces, colors, or composition.`, this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">Foto terlalu gelap</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">Transform this photo into a professionally captured DSLR-quality...</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText(`Transform this photo into a professionally captured DSLR-quality photograph. Improve dynamic range, sharpness, micro-details, exposure, depth, color accuracy, and natural contrast. Create realistic professional photographic quality with subtle depth and beautiful tonal separation. Do not change the subject, face, body, clothing, objects, background, or composition.`, this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">Efek kamera profesional</div>
+			</div>
+			
+			<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">Give this photo a subtle cinematic color grade. Enhance tonal depth...</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText(`Give this photo a subtle cinematic color grade. Enhance tonal depth, contrast, highlights, shadows, and color separation while maintaining realistic skin tones and natural environmental colors. Add a refined cinematic atmosphere without making the image look artificial. Preserve every original person, object, pose, and composition.`, this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">Efek cinematic, tapi tetap natural 🎬</div>
+			</div>
+			
+						<div class="prompt-card">
+				<div class="prompt-header-item">
+					<span class="prompt-tag">Professionally enhance and relight this photograph. Improve exposure, dynamic range, sharpness...</span>
+					<button class="btn-copy-prompt" onclick="salinPromptText(`Professionally enhance and relight this photograph. Improve exposure, dynamic range, sharpness, clarity, fine details, color accuracy, white balance, contrast, and overall image quality. Recover shadow details and preserve highlights. Reduce noise, haze, and compression artifacts. Enhance the natural colors and lighting with a subtle professional DSLR-quality look. Keep the image photorealistic. IMPORTANT: Preserve the exact original person, facial features, body shape, pose, clothing, objects, background, perspective, composition, and scene. Do not add, remove, replace, or redesign anything. Do not change the person's identity. Only improve the photographic quality, lighting, colors, and clarity.`, this)">📋 Copy</button>
+				</div>
+				<div class="prompt-desc">Prompt all in edit kualitas foto</div>
+			</div>
+			
+		</div>
+	</div>
+</div>

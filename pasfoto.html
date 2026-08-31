@@ -100,59 +100,55 @@
 </div>
 
 <div id="cropModal" class="crop-modal">
-	<div class="crop-container-box">
-		<img id="cropImage" src="">
+    <div class="crop-container-box">
+        <img id="cropImage" src="" alt="Preview">
 	</div>
 	
-	<!-- Panel Kontrol Editor Gambar -->
-	<div class="crop-controls-panel">
-		<!-- Slider Zoom -->
-		<div class="control-group">
-			<label>Zoom:</label>
-			<input type="range" id="cropZoomSlider" min="0.1" max="3" step="0.01" value="1">
+    <div class="crop-controls-panel">
+        <div class="stretch-control">
+            <label for="cropStretchCheck"><input type="checkbox" id="cropStretchCheck" onchange="toggleCropAspectMode()">
+                <span>↕ Stretch</span>
+			</label>
 		</div>
-		<!-- Slider Rotasi -->
-		<div class="control-group">
-			<label>Rotasi:</label>
+        <div class="control-group">
+            <span class="control-icon">🔍</span> <label for="cropZoomSlider">Zoom</label>
+            <input type="range" id="cropZoomSlider" min="0.1" max="3" step="0.01" value="1" >
+		</div>
+        <div class="control-group">
+            <span class="control-icon">🔄</span> <label for="cropRotateSlider">Rotasi</label>
 			<input type="range" id="cropRotateSlider" min="-180" max="180" step="1" value="0">
-			<span id="rotateValue">0°</span>
+            <span id="rotateValue">0°</span>
 		</div>
-		
-		<!-- Slider Kecerahan -->
-		<div class="control-group">
-			<label>Cahaya:</label>
-			<input type="range" id="cropBrightness" min="0" max="200" step="1" value="100">
+        <div class="control-group">
+            <span class="control-icon">☀️</span> <label for="cropBrightness">Cahaya</label>
+            <input type="range" id="cropBrightness" min="0" max="200" step="1" value="100">
 		</div>
-		
-		<!-- Slider Kontras -->
-		<div class="control-group">
-			<label>Kontras:</label>
-			<input type="range" id="cropContrast" min="0" max="200" step="1" value="100">
+        <div class="control-group">
+            <span class="control-icon">🌓</span> <label for="cropContrast">Kontras</label>
+            <input type="range" id="cropContrast" min="0" max="200" step="1" value="100">
 		</div>
-		
-		<!-- Slider Saturasi -->
-		<div class="control-group">
-			<label>Saturasi:</label>
-			<input type="range" id="cropSaturate" min="0" max="200" step="1" value="100">
+        <div class="control-group">
+            <span class="control-icon">💧</span> <label for="cropSaturate">Saturasi</label>
+            <input type="range" id="cropSaturate" min="0" max="200" step="1" value="100">
 		</div>
 	</div>
 	
-	<!-- Aksi Tombol (Tombol Reset Ditambahkan Sebelum Tombol Crop) -->
-	<div class="crop-actions">
-		<button class="btn-control btn-rotate" title="Putar Kiri" onclick="putarCepat(-90)">
-			<span class="btn-icon">↺</span> <span class="btn-text">Kiri</span>
+    <div class="crop-actions">
+        <button class="btn-control btn-rotate" title="Putar Kiri" onclick="putarCepat(-90)">
+            <span class="btn-icon">↺</span> <span class="btn-text">Kiri</span>
 		</button>
-		<button class="btn-control btn-rotate" title="Putar Kanan" onclick="putarCepat(90)">
-			<span class="btn-icon">↻</span> <span class="btn-text">Kanan</span>
+        <button class="btn-control btn-rotate" title="Putar Kanan" onclick="putarCepat(90)">
+            <span class="btn-icon">↻</span> <span class="btn-text">Kanan</span>
 		</button>
-		<button class="btn-control btn-reset-image" title="Reset Gambar" onclick="resetEditGambar()">
-			<span class="btn-icon">🔄</span> <span class="btn-text">Reset</span>
+        <button class="btn-control btn-reset-image" title="Reset Gambar" onclick="resetEditGambar()">
+            <span class="btn-icon">🔄</span> <span class="btn-text">Reset</span>
 		</button>
-		<button class="btn-control btn-add" title="Terapkan Crop" onclick="terapkanCrop()">
-			<span class="btn-icon">✅</span> <span class="btn-text">Crop</span>
+        <button class="btn-control btn-add" title="Terapkan Crop" onclick="terapkanCrop()">
+            <span class="btn-icon">✅</span> <span class="btn-text">Crop</span>
 		</button>
-		<button class="btn-control btn-reset" title="Batal" onclick="batalCrop()">
-			<span class="btn-icon">❌</span> <span class="btn-text">Batal</span>
+        <button class="btn-control btn-reset" title="Batal" onclick="batalCrop()">
+            <span class="btn-icon">❌</span> <span class="btn-text">Batal</span>
 		</button>
 	</div>
+	
 </div>

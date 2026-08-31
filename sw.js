@@ -11,6 +11,7 @@ const urlsToCache = [
   './hitung.html',
   './polaroid.html',
   './printgambar.html',
+  './prompt.html',
   './manifest.json',
   
   // CSS
