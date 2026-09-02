@@ -72,11 +72,12 @@
 				<button class="btn-zoom btn-zoom2" onclick="ubahZoom(-0.1)">➖</button>
 				<button class="btn-zoom btn-zoom2" onclick="resetZoom()">🔄</button>
 				<div class="export-container">
-					<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'RataPas')">☰</button>
+					<button class="btn-zoom btn-export" onclick="toggleExportMenu(event, 'RataPas')" title="Atur Posisi">☰</button>
 					<div id="RataPas" class="export-menu">
-						<button class="export-item" onclick="aksiRata('flex-start')">◀ Kiri</button>
-						<button class="export-item" onclick="aksiRata('center')">⬌ Tengah</button>
-						<button class="export-item" onclick="aksiRata('flex-end')">▶ Kanan</button>
+						<button class="export-item" onclick="aksiRataPosisi('flex-start', 'flex-start')">↖ Kiri Atas</button>
+						<button class="export-item" onclick="aksiRataPosisi('center', 'flex-start')">⬆ Tengah Atas</button>
+						<button class="export-item" onclick="aksiRataPosisi('flex-end', 'flex-start')">↗ Kanan Atas</button>
+						<button class="export-item" onclick="aksiRataPosisi('center', 'center')">⬌ Tengah (Center)</button>
 					</div>
 				</div>
 				<div class="export-container">
